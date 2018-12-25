@@ -1,0 +1,142 @@
+@charset "utf-8";
+*{
+	box-sizing: border-box;
+}
+body{
+	background-color: #f9f9f9;
+	padding: 21px 17px;
+	min-width: 1180px;
+}
+.fleft{
+	float: left;
+}
+.bcolor-cyan{
+	background-color: #3CD8D7;
+}
+.bcolor-blue{
+	background: #37C5FB;
+}
+.bcolor-orange{
+	background: #F8AA52;
+}
+.fontColorBlack{
+	color: #323232;
+}
+.fontColorGray{
+	color: #999999;
+}
+.systemindex__top,.systemindex__bottom{
+	width: 100%;
+	margin-bottom: 31px;
+	display: flex;
+	justify-content:center;
+}
+.systemindex__tleft,.systemindex__tright,.systemindex__bleft,.systemindex__bright{
+	width: 50%;
+	padding: 0 10px;
+}
+.systemindex__tltop{
+	width: 100%;
+	min-width: 552px;
+	min-height: 217px;
+	border-radius: 4px;
+	position: relative;
+	margin-bottom: 30px;
+}
+.systemindex__tlbottom{
+	width: 100%;
+	display: flex;
+	justify-content:space-between;
+	
+}
+.systemindex__tlbleft{
+	width: 49%;
+	min-width: 270px;;
+	min-height: 180px;
+	border-radius: 4px;
+	padding-top: 25px;
+	text-align: center;
+}
+.systemindex__tlbleft h4{
+	color: #FFFFFF;
+	font-size: 26px;
+	line-height: 37px;
+	margin-bottom: 22px;
+}
+.systemindex__tlbleft p{
+	font-size: 36px;
+	line-height: 50px;
+	color: #FFFFFF;
+}
+.ul-title{
+	width: 100%;
+	padding: 10px 11.7px;
+	
+}
+.ul-title p{
+	font-size: 24px;;
+	line-height: 33px;
+	color: #323232 ;
+}
+.ul-title p img{
+	display: inline-block;
+	margin-right: 13.1px;;
+	height: 24px;
+	vertical-align: text-top;
+}
+.systemindex-ul li{
+	background-color: #FFFFFF;
+	padding: 24px 15px;
+	position: relative;
+	border-bottom: 1px solid #ededed;
+}
+.leftspan{
+	position: absolute;
+	left: 15px;
+	top: 24px;
+	font-size: 20px;
+	line-height: 28px;
+	width: 45%;
+}
+.leftspan i{
+	float: right;
+	font-style: normal;
+}
+.rightspan{
+	position: absolute;
+	right: 15px;
+	top: 24px;
+	font-size: 20px;
+	line-height: 28px;
+	width: 44.5%;
+	text-align: right;
+}
+.rightspan i{
+	position: absolute;
+	left: 0;
+	right: 0;
+	margin: 0 auto;
+	width: 108px;
+	height: 40px;
+	border: 1px solid #ddd;
+	font-size: 20px;
+	line-height: 40px;
+	color: #999999;
+	text-align: center;
+	font-style: normal;
+}
+.systemindex-ul li p{
+	width: 24.5%;
+	margin-left: 45%;
+	margin-right: 44.5%;
+	font-size: 20px;
+	line-height: 28px;
+	text-align: center;
+}
+.systemindex-ul li:first-of-type{
+	border-radius: 4px 4px 0 0 ;
+}
+.systemindex-ul li:last-of-type{
+	border-radius:0 0  4px 4px ;
+	border-bottom: 0;
+}
