@@ -1,0 +1,135 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.jeeplus.modules.homework.eduhomeworkquestion.mapper.EduHomeworkQuestionMapper">
+    
+	<sql id="eduHomeworkQuestionColumns">
+		a.id AS "id",
+		a.homework AS "homework",
+		a.question AS "question",
+		a.status AS "status",
+		a.create_by AS "createBy.id",
+		a.create_date AS "createDate",
+		a.update_by AS "updateBy.id",
+		a.update_date AS "updateDate",
+		a.remarks AS "remarks",
+		a.del_flag AS "delFlag"
+	</sql>
+	
+	<sql id="eduHomeworkQuestionJoins">
+		
+	</sql>
+	
+    
+	<select id="get" resultType="EduHomeworkQuestion" >
+		SELECT 
+			<include refid="eduHomeworkQuestionColumns"/>
+		FROM edu_homework_question a
+		<include refid="eduHomeworkQuestionJoins"/>
+		WHERE a.id = #{id}
+	</select>
+	
+	<select id="findList" resultType="EduHomeworkQuestion" >
+		SELECT 
+			<include refid="eduHomeworkQuestionColumns"/>
+		FROM edu_homework_question a
+		<include refid="eduHomeworkQuestionJoins"/>
+		<where>
+			a.del_flag = #{DEL_FLAG_NORMAL}
+			${dataScope}
+		</where>
+		<choose>
+			<when test="page !=null and page.orderBy != null and page.orderBy != ''">
+				ORDER BY ${page.orderBy}
+			</when>
+			<otherwise>
+				ORDER BY a.update_date DESC
+			</otherwise>
+		</choose>
+	</select>
+	
+	<select id="findAllList" resultType="EduHomeworkQuestion" >
+		SELECT 
+			<include refid="eduHomeworkQuestionColumns"/>
+		FROM edu_homework_question a
+		<include refid="eduHomeworkQuestionJoins"/>
+		<where>
+			a.del_flag = #{DEL_FLAG_NORMAL}
+			${dataScope}
+		</where>		
+		<choose>
+			<when test="page !=null and page.orderBy != null and page.orderBy != ''">
+				ORDER BY ${page.orderBy}
+			</when>
+			<otherwise>
+				ORDER BY a.update_date DESC
+			</otherwise>
+		</choose>
+	</select>
+	
+	<insert id="insert">
+		INSERT INTO edu_homework_question(
+			id,
+			homework,
+			question,
+			status,
+			create_by,
+			create_date,
+			update_by,
+			update_date,
+			remarks,
+			del_flag
+		) VALUES (
+			#{id},
+			#{homework},
+			#{question},
+			#{status},
+			#{createBy.id},
+			#{createDate},
+			#{updateBy.id},
+			#{updateDate},
+			#{remarks},
+			#{delFlag}
+		)
+	</insert>
+	
+	<update id="update">
+		UPDATE edu_homework_question SET 	
+			homework = #{homework},
+			question = #{question},
+			status = #{status},
+			update_by = #{updateBy.id},
+			update_date = #{updateDate},
+			remarks = #{remarks}
+		WHERE id = #{id}
+	</update>
+	
+	
+	<!--物理删除-->
+	<update id="delete">
+		DELETE FROM edu_homework_question
+		WHERE 1 = 1
+		<if test="id != null and id != ''">
+			and id = #{id}
+		</if>
+		<if test="homework != null and homework != ''">
+			and homework = #{homework}
+		</if>
+		<if test="question != null and question != ''">
+			and question = #{question}
+		</if>
+	</update>
+	
+	<!--逻辑删除-->
+	<update id="deleteByLogic">
+		UPDATE edu_homework_question SET 
+			del_flag = #{DEL_FLAG_DELETE}
+		WHERE id = #{id}
+	</update>
+	
+	
+	<!-- 根据实体名称和字段名称和字段值获取唯一记录 -->
+	<select id="findUniqueByProperty" resultType="EduHomeworkQuestion" statementType="STATEMENT">
+		select * FROM edu_homework_question  where ${propertyName} = '${value}'
+	</select>
+	
+</mapper>

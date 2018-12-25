@@ -1,0 +1,164 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.jeeplus.modules.teachmaterial.tmaterial.mapper.EduTeachMaterialMapper">
+    
+	<sql id="eduTeachMaterialColumns">
+		a.id AS "id",
+		a.subject AS "subject",
+		a.grade AS "grade",
+		a.publisher AS "publisher",
+		a.textbook AS "textbook.id",
+		a.create_by AS "createBy.id",
+		a.create_date AS "createDate",
+		a.update_by AS "updateBy.id",
+		a.update_date AS "updateDate",
+		a.remarks AS "remarks",
+		a.del_flag AS "delFlag",
+		a.schoolid AS "office.id", 		
+		office.name AS "office.name",				
+		textbook.name AS "textbook.name"
+	</sql>
+	
+	<sql id="eduTeachMaterialJoins">
+		LEFT JOIN edu_textbook textbook ON textbook.id = a.textbook 
+		LEFT JOIN sys_office office ON office.id = a.schoolid
+	</sql>
+	
+    
+	<select id="get" resultType="EduTeachMaterial" >
+		SELECT 
+			<include refid="eduTeachMaterialColumns"/>
+		FROM edu_teach_material a
+		<include refid="eduTeachMaterialJoins"/>
+		WHERE a.id = #{id}
+	</select>
+	
+	<select id="findList" resultType="EduTeachMaterial" >
+		SELECT 
+			<include refid="eduTeachMaterialColumns"/>
+		FROM edu_teach_material a
+		<include refid="eduTeachMaterialJoins"/>
+		<where>
+			a.del_flag = #{DEL_FLAG_NORMAL}
+			${dataScope}
+			<if test="subject != null and subject != ''">
+				AND a.subject = #{subject}
+			</if>
+			<if test="grade != null and grade != ''">
+				AND a.grade = #{grade}
+			</if>
+			<if test="publisher != null and publisher != ''">
+				AND a.publisher = #{publisher}
+			</if>
+			<if test="textbook != null and textbook.id != null and textbook.id != ''">
+				AND a.textbook = #{textbook.id}
+			</if>
+			<if test="createBy != null and createBy.id != null and createBy.id != ''">
+				AND a.create_by = #{createBy.id}
+			</if>
+			<if test="office !=null and office.id != null and office.id != ''">
+			    AND a.schoolid =#{office.id}
+			</if>
+			<if test="ids!=null and ids!=''">
+				AND a.create_by IN
+				<foreach collection="ids" index="index" item="item" open="(" separator="," close=")">
+					#{item}
+				</foreach>
+			</if>
+		</where>
+		<choose>
+			<when test="page !=null and page.orderBy != null and page.orderBy != ''">
+				ORDER BY ${page.orderBy}
+			</when>
+			<otherwise>
+				ORDER BY a.update_date DESC
+			</otherwise>
+		</choose>
+	</select>
+	
+	<select id="findAllList" resultType="EduTeachMaterial" >
+		SELECT 
+			<include refid="eduTeachMaterialColumns"/>
+		FROM edu_teach_material a
+		<include refid="eduTeachMaterialJoins"/>
+		<where>
+			a.del_flag = #{DEL_FLAG_NORMAL}
+			${dataScope}
+		</where>		
+		<choose>
+			<when test="page !=null and page.orderBy != null and page.orderBy != ''">
+				ORDER BY ${page.orderBy}
+			</when>
+			<otherwise>
+				ORDER BY a.update_date DESC
+			</otherwise>
+		</choose>
+	</select>
+	
+	<insert id="insert">
+		INSERT INTO edu_teach_material(
+			id,
+			subject,
+			grade,
+			publisher,
+			textbook,
+			create_by,
+			create_date,
+			update_by,
+			update_date,
+			remarks,
+			del_flag,
+			schoolid
+		) VALUES (
+			#{id},
+			#{subject},
+			#{grade},
+			#{publisher},
+			#{textbook.id},
+			#{createBy.id},
+			#{createDate},
+			#{updateBy.id},
+			#{updateDate},
+			#{remarks},
+			#{delFlag},
+			#{office.id}
+		)
+	</insert>
+	
+	<update id="update">
+		UPDATE edu_teach_material SET 	
+			subject = #{subject},
+			grade = #{grade},
+			publisher = #{publisher},
+			textbook = #{textbook.id},
+			update_by = #{updateBy.id},
+			update_date = #{updateDate},
+			remarks = #{remarks}
+		WHERE id = #{id}
+	</update>
+	
+	
+	<!--物理删除-->
+	<update id="delete">
+		DELETE FROM edu_teach_material
+		WHERE id = #{id}
+	</update>
+	
+	<!--逻辑删除-->
+	<update id="deleteByLogic">
+		UPDATE edu_teach_material SET 
+			del_flag = #{DEL_FLAG_DELETE}
+		WHERE id = #{id}
+	</update>
+	
+	
+	<!-- 根据实体名称和字段名称和字段值获取唯一记录 -->
+	<select id="findUniqueByProperty" resultType="EduTeachMaterial" statementType="STATEMENT">
+		select * FROM edu_teach_material  where ${propertyName} = '${value}'
+	</select>
+	
+	<select id="getByTextbook" resultType="EduTeachMaterial">
+		select * from edu_teach_material where textbook = #{textbook} and create_by = #{userId} limit 1
+	</select>
+	
+</mapper>

@@ -1,0 +1,161 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.jeeplus.modules.teachmaterial.tmaterialresource.mapper.EduMaterialResourceMapper">
+    
+	<sql id="eduMaterialResourceColumns">
+		a.id AS "id",
+		a.material_id AS "materialId",
+		a.textbook_id AS "textbookId",
+		a.chapter_id AS "chapterId",
+		a.resource_id AS "resource.id",
+		a.status AS "status",
+		a.create_by AS "createBy.id",
+		a.create_date AS "createDate",
+		a.update_by AS "updateBy.id",
+		a.update_date AS "updateDate",
+		a.remarks AS "remarks",
+		a.del_flag AS "delFlag",
+				
+				
+				
+				
+		resource.resourcename AS "resource.resourcename",
+		resource.resourcetype AS "resource.resourcetype",
+		resource.filetype AS "resource.filetype",
+		resource.filename AS "resource.filename"
+	</sql>
+	
+	<sql id="eduMaterialResourceJoins">
+		
+		JOIN edu_teache_resource resource ON resource.id = a.resource_id
+	</sql>
+	
+    
+	<select id="get" resultType="EduMaterialResource" >
+		SELECT 
+			<include refid="eduMaterialResourceColumns"/>
+		FROM edu_material_resource a
+		<include refid="eduMaterialResourceJoins"/>
+		WHERE a.id = #{id}
+	</select>
+	
+	<select id="findList" resultType="EduMaterialResource" >
+		SELECT 
+			<include refid="eduMaterialResourceColumns"/>
+		FROM edu_material_resource a
+		<include refid="eduMaterialResourceJoins"/>
+		<where>
+			a.del_flag = #{DEL_FLAG_NORMAL} and status = '0'
+			${dataScope}
+			<if test="resource != null and resource.id != null and resource.id != ''">
+				AND a.resource_id LIKE 
+					<if test="dbName == 'oracle'">'%'||#{resource.id}||'%'</if>
+					<if test="dbName == 'mssql'">'%'+#{resource.id}+'%'</if>
+					<if test="dbName == 'mysql'">concat('%',#{resource.id},'%')</if>
+			</if>
+			<if test="chapterId != null and chapterId != ''">
+				AND a.chapter_id = #{chapterId}
+			</if>
+			<if test="createBy != null and createBy.id != null and createBy.id != ''">
+				AND a.create_by = #{createBy.id}
+			</if>
+		</where>
+		<choose>
+			<when test="page !=null and page.orderBy != null and page.orderBy != ''">
+				ORDER BY ${page.orderBy}
+			</when>
+			<otherwise>
+				ORDER BY a.update_date DESC
+			</otherwise>
+		</choose>
+	</select>
+	
+	<select id="findAllList" resultType="EduMaterialResource" >
+		SELECT 
+			<include refid="eduMaterialResourceColumns"/>
+		FROM edu_material_resource a
+		<include refid="eduMaterialResourceJoins"/>
+		<where>
+			a.del_flag = #{DEL_FLAG_NORMAL}
+			${dataScope}
+		</where>		
+		<choose>
+			<when test="page !=null and page.orderBy != null and page.orderBy != ''">
+				ORDER BY ${page.orderBy}
+			</when>
+			<otherwise>
+				ORDER BY a.update_date DESC
+			</otherwise>
+		</choose>
+	</select>
+	
+	<insert id="insert">
+		INSERT INTO edu_material_resource(
+			id,
+			material_id,
+			textbook_id,
+			chapter_id,
+			resource_id,
+			status,
+			create_by,
+			create_date,
+			update_by,
+			update_date,
+			remarks,
+			del_flag
+		) VALUES (
+			#{id},
+			#{materialId},
+			#{textbookId},
+			#{chapterId},
+			#{resource.id},
+			#{status},
+			#{createBy.id},
+			#{createDate},
+			#{updateBy.id},
+			#{updateDate},
+			#{remarks},
+			#{delFlag}
+		)
+	</insert>
+	
+	<update id="update">
+		UPDATE edu_material_resource SET 	
+			material_id = #{materialId},
+			textbook_id = #{textbookId},
+			chapter_id = #{chapterId},
+			resource_id = #{resource.id},
+			status = #{status},
+			update_by = #{updateBy.id},
+			update_date = #{updateDate},
+			remarks = #{remarks}
+		WHERE id = #{id}
+	</update>
+	
+	
+	<!--物理删除-->
+	<update id="delete">
+		DELETE FROM edu_material_resource
+		WHERE id = #{id}
+	</update>
+	
+	<!--逻辑删除-->
+	<update id="deleteByLogic">
+		UPDATE edu_material_resource SET 
+			del_flag = #{DEL_FLAG_DELETE}
+		WHERE id = #{id}
+	</update>
+	
+	
+	<!-- 根据实体名称和字段名称和字段值获取唯一记录 -->
+	<select id="findUniqueByProperty" resultType="EduMaterialResource" statementType="STATEMENT">
+		select * FROM edu_material_resource  where ${propertyName} = '${value}'
+	</select>
+	
+	<select id="findResourceList" resultType="EduTeacheResource" parameterType="EduTeacheResource">
+		SELECT b.* FROM edu_material_resource a
+		INNER JOIN edu_teache_resource b ON a.resource_id = b.id
+		WHERE a.chapter_id = #{chapterId}
+	</select>
+	
+</mapper>

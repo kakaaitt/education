@@ -1,0 +1,149 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.jeeplus.modules.school.textbooklist.mapper.EduTextBookListMapper">
+    
+	<sql id="eduTextBookListColumns">
+		a.id AS "id",
+		a.`name` as "name",
+		a.pressid AS "pressid", 
+		a.subjectid AS "subjectid", 
+		a.grade AS "grade", 
+		a.create_by AS "createBy.id", 
+		a.create_date AS "createDate", 
+		a.update_by AS "updateBy.id",
+		a.update_date AS "updateDate", 
+		a.schoolid AS "office.id",
+		office.name AS "office.name"
+
+	</sql>
+	
+	<sql id="eduTextBookListJoins">
+		 left join sys_office office ON office.id = a.schoolid 
+	</sql>
+	
+    
+	<select id="get" resultType="EduTextBookList" >
+		SELECT 
+			<include refid="eduTextBookListColumns"/>
+		FROM edu_textbook a
+		<include refid="eduTextBookListJoins"/>
+		WHERE a.id = #{id}
+	</select>
+	
+	<select id="findList" resultType="EduTextBookList" >
+		SELECT 
+			<include refid="eduTextBookListColumns"/>
+		FROM edu_textbook a 
+		<include refid="eduTextBookListJoins"/>
+		<where>
+			 a.remarks=0 
+			${dataScope}
+			<if test="name != null and name != ''">
+				and a.name LIKE 
+					<if test="dbName == 'oracle'">'%'||#{name}||'%'</if>
+					<if test="dbName == 'mssql'">'%'+#{name}+'%'</if>
+					<if test="dbName == 'mysql'">concat('%',#{name},'%')</if>
+			</if>
+			<if test="office !=null and office.id != null and office.id != ''">
+			   and a.schoolid =#{office.id}
+			</if>
+		</where>
+		<choose>
+			<when test="page !=null and page.orderBy != null and page.orderBy != ''">
+				ORDER BY ${page.orderBy}
+			</when>
+			<otherwise>
+				ORDER BY a.grade ASC
+			</otherwise>
+		</choose>
+	</select>
+	
+	<select id="findAllList" resultType="EduTextBookList" >
+		SELECT 
+			<include refid="eduTextBookListColumns"/>
+		FROM edu_textbook a
+		<include refid="eduTextBookListJoins"/>
+		<where>
+			 remarks=0 
+			${dataScope}
+		</where>		
+		<choose>
+			<when test="page !=null and page.orderBy != null and page.orderBy != ''">
+				ORDER BY ${page.orderBy}
+			</when>
+			<otherwise>
+				ORDER BY a.sort ASC
+			</otherwise>
+		</choose>
+	</select>
+	
+	<insert id="insert">
+		INSERT INTO edu_textbook(
+			id,
+			name,
+			pressid,
+			parent_id,
+			parent_ids,
+			sort,
+			create_by,
+			create_date,
+			update_by,
+			update_date,
+			del_flag,
+			remarks,
+			grade,
+			subjectid
+		) VALUES (
+			#{id},
+			#{name},
+			#{pressid},
+			'0',
+			'0,',
+			#{sort},
+			#{createBy.id},
+			#{createDate},
+			#{updateBy.id},
+			#{updateDate},
+			'0',
+		     0,
+			#{grade},
+			#{subjectid}
+		)
+	</insert>
+	
+	<update id="update">
+		UPDATE edu_textbook SET 	
+			name = #{name},
+			pressid = #{pressid},
+			parent_id = #{parent.id},
+			parent_ids = #{parentIds},
+			sort = #{sort},
+			update_by = #{updateBy.id},
+			update_date = #{updateDate},
+			remarks = #{remarks},
+			grade = #{grade},
+			subjectid = #{subjectid}
+		WHERE id = #{id}
+	</update>
+	
+	
+	<!--物理删除-->
+	<update id="delete">
+		DELETE FROM edu_textbook
+		WHERE id = #{id}
+	</update>
+	
+	<!--逻辑删除-->
+	<update id="deleteByLogic">
+		UPDATE edu_textbook SET 
+			del_flag = #{DEL_FLAG_DELETE}
+		WHERE id = #{id}
+	</update>
+	
+	
+	<!-- 根据实体名称和字段名称和字段值获取唯一记录 -->
+	<select id="findUniqueByProperty" resultType="EduTextBookList" statementType="STATEMENT">
+		select * FROM edu_textbooklist  where ${propertyName} = '${value}'
+	</select>
+	
+</mapper>

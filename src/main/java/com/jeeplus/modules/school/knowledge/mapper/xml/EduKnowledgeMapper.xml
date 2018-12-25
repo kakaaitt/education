@@ -1,0 +1,141 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.jeeplus.modules.school.knowledge.mapper.EduKnowledgeMapper">
+    
+	<sql id="eduKnowledgeColumns">
+		a.id AS "id",
+		a.name AS "name",
+		a.grade AS "grade",
+		a.subject AS "subject",
+		a.create_by AS "createBy.loginName",
+		a.create_date AS "createDate",
+		a.update_by AS "updateBy.loginName",
+		a.update_date AS "updateDate",
+		a.remarks AS "remarks",
+		a.del_flag AS "delFlag"
+	</sql>
+	
+	<sql id="eduKnowledgeJoins">
+		
+	</sql>
+	
+    
+	<select id="get" resultType="EduKnowledge" >
+		SELECT 
+			<include refid="eduKnowledgeColumns"/>
+		FROM edu_knowledge a
+		<include refid="eduKnowledgeJoins"/>
+		WHERE a.id = #{id}
+	</select>
+	
+	<select id="findList" resultType="EduKnowledge" >
+		SELECT 
+			<include refid="eduKnowledgeColumns"/>
+		FROM edu_knowledge a
+		<include refid="eduKnowledgeJoins"/>
+		<where>
+			a.del_flag = #{DEL_FLAG_NORMAL}
+			${dataScope}
+			<if test="name != null and name != ''">
+				AND a.name LIKE 
+					<if test="dbName == 'oracle'">'%'||#{name}||'%'</if>
+					<if test="dbName == 'mssql'">'%'+#{name}+'%'</if>
+					<if test="dbName == 'mysql'">concat('%',#{name},'%')</if>
+			</if>
+			<if test="grade != null and grade != ''">
+				AND a.grade = #{grade}
+			</if>
+			<if test="subject != null and subject != ''">
+				AND a.subject = #{subject}
+			</if>
+			<if test="createBy !=null">
+			   AND (a.create_by='admin' or a.create_by=#{createBy.loginName} )
+			</if>
+		</where>
+		<choose>
+			<when test="page !=null and page.orderBy != null and page.orderBy != ''">
+				ORDER BY ${page.orderBy}
+			</when>
+			<otherwise>
+				ORDER BY a.update_date DESC
+			</otherwise>
+		</choose>
+	</select>
+	
+	<select id="findAllList" resultType="EduKnowledge" >
+		SELECT 
+			<include refid="eduKnowledgeColumns"/>
+		FROM edu_knowledge a
+		<include refid="eduKnowledgeJoins"/>
+		<where>
+			a.del_flag = #{DEL_FLAG_NORMAL}
+			${dataScope}
+		</where>		
+		<choose>
+			<when test="page !=null and page.orderBy != null and page.orderBy != ''">
+				ORDER BY ${page.orderBy}
+			</when>
+			<otherwise>
+				ORDER BY a.update_date DESC
+			</otherwise>
+		</choose>
+	</select>
+	
+	<insert id="insert">
+		INSERT INTO edu_knowledge(
+			id,
+			name,
+			grade,
+			subject,
+			create_by,
+			create_date,
+			update_by,
+			update_date,
+			remarks,
+			del_flag
+		) VALUES (
+			#{id},
+			#{name},
+			#{grade},
+			#{subject},
+			#{createBy.loginName},
+			#{createDate},
+			#{updateBy.loginName},
+			#{updateDate},
+			#{remarks},
+			#{delFlag}
+		)
+	</insert>
+	
+	<update id="update">
+		UPDATE edu_knowledge SET 	
+			name = #{name},
+			grade = #{grade},
+			subject = #{subject},
+			update_by = #{updateBy.loginName},
+			update_date = #{updateDate},
+			remarks = #{remarks}
+		WHERE id = #{id}
+	</update>
+	
+	
+	<!--物理删除-->
+	<update id="delete">
+		DELETE FROM edu_knowledge
+		WHERE id = #{id}
+	</update>
+	
+	<!--逻辑删除-->
+	<update id="deleteByLogic">
+		UPDATE edu_knowledge SET 
+			del_flag = #{DEL_FLAG_DELETE}
+		WHERE id = #{id}
+	</update>
+	
+	
+	<!-- 根据实体名称和字段名称和字段值获取唯一记录 -->
+	<select id="findUniqueByProperty" resultType="EduKnowledge" statementType="STATEMENT">
+		select * FROM edu_knowledge  where ${propertyName} = '${value}'
+	</select>
+	
+</mapper>

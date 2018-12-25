@@ -1,0 +1,165 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.jeeplus.modules.school.studentparent.mapper.EduStudentParentMapper">
+    
+	<sql id="eduStudentParentColumns">
+		a.id AS "id",
+		a.student_id AS "user1.id",
+		a.parent_id AS "user2.id",
+		a.create_by AS "createBy.id",
+		a.create_date AS "createDate",
+		a.update_by AS "updateBy.id",
+		a.update_date AS "updateDate",
+		a.remarks AS "remarks",
+		a.del_flag AS "delFlag",
+				
+		user1.name AS "user1.name",
+		user1.login_name AS "user1.loginName",
+		user2.name AS "user2.name",
+		user2.login_name AS "user2.loginName",
+		classes.name AS "classes.name",
+		classes.id AS "classes.id",
+		office.name AS "office.name",
+		office.id AS "office.id"
+	</sql>
+	
+	<sql id="eduStudentParentJoins">
+		
+		LEFT JOIN sys_user user1 ON user1.id = a.student_id
+		LEFT JOIN sys_user user2 ON user2.id = a.parent_id
+		LEFT JOIN sys_office office ON user1.office_id = office.id
+		LEFT JOIN edu_student_class sc on a.student_id = sc.student
+		LEFT JOIN edu_classes classes ON classes.id = sc.class
+	</sql>
+	
+    
+	<select id="get" resultType="EduStudentParent" >
+		SELECT 
+			<include refid="eduStudentParentColumns"/>
+		FROM edu_student_parent a
+		<include refid="eduStudentParentJoins"/>
+		WHERE a.id = #{id}
+	</select>
+	
+	<select id="findList" resultType="EduStudentParent" >
+		SELECT 
+			<include refid="eduStudentParentColumns"/>
+		FROM edu_student_parent a
+		<include refid="eduStudentParentJoins"/>
+		<where>
+			a.del_flag = #{DEL_FLAG_NORMAL}
+			${dataScope}
+			<if test="user1 != null and user1.id != null and user1.id != ''">
+				AND a.student_id = #{user1.id}
+			</if>
+			<if test="user2 != null and user2.id != null and user2.id != ''">
+				AND a.parent_id = #{user2.id}
+			</if>
+			<if test="classes != null and classes.id != null and classes.id != ''">
+				AND sc.class = #{classes.id}
+			</if>
+			<if test="office != null and office.id != null and office.id != ''">
+				AND classes.office_id = #{office.id}
+			</if>
+			<if test="user1 != null and user1.name != null and user1.name != ''">
+				AND user1.name like concat('%',#{user1.name},'%')
+			</if>
+			<if test="user2 != null and user2.name != null and user2.name != ''">
+				AND user2.name like concat('%',#{user2.name},'%')
+			</if>
+		</where>
+		<choose>
+			<when test="page !=null and page.orderBy != null and page.orderBy != ''">
+				ORDER BY ${page.orderBy}
+			</when>
+			<otherwise>
+				ORDER BY a.update_date DESC
+			</otherwise>
+		</choose>
+	</select>
+	
+	<select id="findAllList" resultType="EduStudentParent" >
+		SELECT 
+			<include refid="eduStudentParentColumns"/>
+		FROM edu_student_parent a
+		<include refid="eduStudentParentJoins"/>
+		<where>
+			a.del_flag = #{DEL_FLAG_NORMAL}
+			${dataScope}
+		</where>		
+		<choose>
+			<when test="page !=null and page.orderBy != null and page.orderBy != ''">
+				ORDER BY ${page.orderBy}
+			</when>
+			<otherwise>
+				ORDER BY a.update_date DESC
+			</otherwise>
+		</choose>
+	</select>
+	
+	<insert id="insert">
+		INSERT INTO edu_student_parent(
+			id,
+			student_id,
+			parent_id,
+			create_by,
+			create_date,
+			update_by,
+			update_date,
+			remarks,
+			del_flag
+		) VALUES (
+			#{id},
+			#{user1.id},
+			#{user2.id},
+			#{createBy.id},
+			#{createDate},
+			#{updateBy.id},
+			#{updateDate},
+			#{remarks},
+			#{delFlag}
+		)
+	</insert>
+	
+	<update id="update">
+		UPDATE edu_student_parent SET 	
+			student_id = #{user1.id},
+			parent_id = #{user2.id},
+			update_by = #{updateBy.id},
+			update_date = #{updateDate},
+			remarks = #{remarks}
+		WHERE id = #{id}
+	</update>
+	
+	
+	<!--物理删除-->
+	<update id="delete">
+		DELETE FROM edu_student_parent
+		WHERE id = #{id}
+	</update>
+	
+	<!--逻辑删除-->
+	<update id="deleteByLogic">
+		UPDATE edu_student_parent SET 
+			del_flag = #{DEL_FLAG_DELETE}
+		WHERE id = #{id}
+	</update>
+	
+	<!--逻辑删除-->
+	<update id="deleteByStudentAndParent">
+		UPDATE edu_student_parent SET 
+			del_flag = #{DEL_FLAG_DELETE}
+		WHERE parent_id = #{user2.id}
+	</update>
+	
+	
+	<!-- 根据实体名称和字段名称和字段值获取唯一记录 -->
+	<select id="findUniqueByProperty" resultType="EduStudentParent" statementType="STATEMENT">
+		select * FROM edu_student_parent  where ${propertyName} = '${value}'
+	</select>
+	
+	<select id="selectByStudentAndParent" resultType="EduStudentParent"> 
+		SELECT * FROM edu_student_parent
+		WHERE student_id = #{user1.id} and parent_id = #{user2.id} and del_flag = #{DEL_FLAG_NORMAL}
+	</select>
+</mapper>

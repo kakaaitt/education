@@ -1,0 +1,186 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.jeeplus.modules.teachmaterial.tresource.mapper.EduTeacheResourceMapper">
+    
+	<sql id="eduTeacheResourceColumns">
+		a.id AS "id",
+		a.resourcetype AS "resourcetype",
+		a.resourcename AS "resourcename",
+		a.filetype AS "filetype",
+		a.filename AS "filename",
+		a.shareflag AS "shareflag",
+		a.browse AS "browse",
+		a.create_by AS "createBy.loginName",
+		a.create_date AS "createDate",
+		a.update_by AS "updateBy.loginName",
+		a.update_date AS "updateDate",
+		a.del_flag AS "delFlag",
+		
+		c.photo AS "createBy.photo"
+	</sql>
+	
+	<sql id="eduTeacheResourceJoins">
+		left join edu_material_resource b on a.id = b.resource_id
+		left join sys_user c on a.create_by = c.login_name
+	</sql>
+	
+    
+	<select id="get" resultType="EduTeacheResource" >
+		SELECT 
+			<include refid="eduTeacheResourceColumns"/>
+		FROM edu_teache_resource a
+		<include refid="eduTeacheResourceJoins"/>
+		WHERE a.id = #{id}
+	</select>
+	
+	<select id="findList" resultType="EduTeacheResource" >
+		SELECT DISTINCT 
+			<include refid="eduTeacheResourceColumns"/>
+		FROM edu_teache_resource a
+		<include refid="eduTeacheResourceJoins"/>
+		<where>
+			a.del_flag = #{DEL_FLAG_NORMAL}
+			${dataScope}
+			<if test="resourcetype != null and resourcetype != ''">
+				AND a.resourcetype = #{resourcetype}
+			</if>
+			<if test="filetype != null and filetype != ''">
+				AND a.filetype = #{filetype}
+			</if>
+			<if test="chapterId != null and chapterId != ''">
+				AND b.chapter_id = #{chapterId}
+			</if>
+			<if test="resourcename != null and resourcename != ''">
+				AND a.resourcename LIKE 
+					<if test="dbName == 'oracle'">'%'||#{resourcename}||'%'</if>
+					<if test="dbName == 'mssql'">'%'+#{resourcename}+'%'</if>
+					<if test="dbName == 'mysql'">concat('%',#{resourcename},'%')</if>
+			</if>
+			<if test="shareflag != null and shareflag != ''">
+				AND a.shareflag = #{shareflag}
+			</if>
+			<if test="createBy != null and createBy.loginName != null and createBy.loginName != ''">
+				AND (a.create_by = #{createBy.loginName} or a.shareflag = '1')
+			</if>
+			<if test="loginNames!=null and loginNames!=''">
+				AND (a.create_by IN
+				<foreach collection="loginNames" index="index" item="item" open="(" separator="," close=")">
+					#{item}
+				</foreach>
+				or a.shareflag = '1')
+			</if>
+			<if test="isStudent != null and isStudent != ''">
+				AND (a.filetype = '22' or a.filetype = '23')
+			</if>
+		</where>
+		<choose>
+			<when test="page !=null and page.orderBy != null and page.orderBy != ''">
+				ORDER BY ${page.orderBy}
+			</when>
+			<otherwise>
+				ORDER BY a.update_date DESC
+			</otherwise>
+		</choose>
+	</select>
+	
+	<select id="findAllList" resultType="EduTeacheResource" >
+		SELECT 
+			<include refid="eduTeacheResourceColumns"/>
+		FROM edu_teache_resource a
+		<include refid="eduTeacheResourceJoins"/>
+		<where>
+			a.del_flag = #{DEL_FLAG_NORMAL}
+			${dataScope}
+		</where>		
+		<choose>
+			<when test="page !=null and page.orderBy != null and page.orderBy != ''">
+				ORDER BY ${page.orderBy}
+			</when>
+			<otherwise>
+				ORDER BY a.update_date DESC
+			</otherwise>
+		</choose>
+	</select>
+	
+	<insert id="insert">
+		INSERT INTO edu_teache_resource(
+			id,
+			resourcetype,
+			resourcename,
+			filetype,
+			filename,
+			shareflag,
+			browse,
+			create_by,
+			create_date,
+			update_by,
+			update_date,
+			del_flag
+		) VALUES (
+			#{id},
+			#{resourcetype},
+			#{resourcename},
+			#{filetype},
+			#{filename},
+			#{shareflag},
+			0,
+			#{createBy.loginName},
+			#{createDate},
+			#{updateBy.loginName},
+			#{updateDate},
+			#{delFlag}
+		)
+	</insert>
+	
+	<update id="update">
+		UPDATE edu_teache_resource SET 	
+			resourcetype = #{resourcetype},
+			resourcename = #{resourcename},
+			filetype = #{filetype},
+			filename = #{filename},
+			shareflag = #{shareflag},
+			update_by = #{updateBy.loginName},
+			update_date = #{updateDate}
+		WHERE id = #{id}
+	</update>
+	
+	
+	<!--物理删除-->
+	<update id="delete">
+		DELETE FROM edu_teache_resource
+		WHERE id = #{id}
+	</update>
+	
+	<!--逻辑删除-->
+	<update id="deleteByLogic">
+		UPDATE edu_teache_resource SET 
+			del_flag = #{DEL_FLAG_DELETE}
+		WHERE id = #{id}
+	</update>
+	
+	
+	<!-- 根据实体名称和字段名称和字段值获取唯一记录 -->
+	<select id="findUniqueByProperty" resultType="EduTeacheResource" statementType="STATEMENT">
+		select * FROM edu_teache_resource  where ${propertyName} = '${value}'
+	</select>
+	
+	<update id="updateBrowse">
+		update edu_teache_resource set browse = browse+1 where id=#{id}
+	</update>
+	
+	<select id="getSubjectByTextId" resultType="java.lang.String">
+		select b.subjectid from edu_textbook a
+		join edu_textbook b on substring_index(
+			substring_index(a.parent_ids, ',', 2),
+			',' ,- 1
+		) = b.id
+		where a.id = #{textid}
+	</select>
+	
+	<insert id="insertResourceLog">
+		insert into edu_resource_log 
+		(id,student,subject,resource,brower_time)
+		values
+		(#{id},#{student},#{subject},#{resource},now())
+	</insert>
+</mapper>

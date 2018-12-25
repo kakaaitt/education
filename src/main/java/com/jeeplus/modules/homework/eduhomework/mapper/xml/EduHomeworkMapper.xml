@@ -1,0 +1,343 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.jeeplus.modules.homework.eduhomework.mapper.EduHomeworkMapper">
+    
+	<sql id="eduHomeworkColumns">
+		a.id AS "id",
+		a.name AS "name",
+		a.requirement AS "requirement",
+		a.status AS "status",
+		a.subject AS "subject",
+		a.create_by AS "createBy.id",
+		a.create_date AS "createDate",
+		a.update_by AS "updateBy.id",
+		a.update_date AS "updateDate",
+		a.remarks AS "remarks",
+		a.del_flag AS "delFlag",
+		a.arrange_time AS "arrangeTime",
+		
+		b.name AS "createBy.name",
+		c.name AS "office.name"
+	</sql>
+	
+	<sql id="eduHomeworkJoins">
+		left join sys_user b on a.create_by = b.id
+		inner join sys_office c on b.office_id = c.id
+	</sql>
+	
+    
+	<select id="get" resultType="EduHomework" >
+		SELECT 
+			<include refid="eduHomeworkColumns"/>
+		FROM edu_homework a
+		<include refid="eduHomeworkJoins"/>
+		WHERE a.id = #{id}
+	</select>
+	
+	<select id="findList" resultType="EduHomework" >
+		SELECT 
+			<include refid="eduHomeworkColumns"/>
+		FROM edu_homework a
+		<include refid="eduHomeworkJoins"/>
+		<where>
+			a.del_flag = #{DEL_FLAG_NORMAL}
+			${dataScope}
+			<if test="name != null and name != ''">
+				AND a.name LIKE 
+					<if test="dbName == 'oracle'">'%'||#{name}||'%'</if>
+					<if test="dbName == 'mssql'">'%'+#{name}+'%'</if>
+					<if test="dbName == 'mysql'">concat('%',#{name},'%')</if>
+			</if>
+			<if test="status != null and status != ''">
+				AND a.status = #{status}
+			</if>
+			<if test="isTeacher != null and isTeacher != ''">
+				AND a.status != '0'
+			</if>
+			<if test="subject != null and subject != ''">
+				AND a.subject = #{subject}
+			</if>
+			<if test="createBy != null and createBy.id != null and createBy.id != ''">
+				AND a.create_by = #{createBy.id}
+			</if>
+			<if test="office != null and office.id != null and office.id != ''">
+				AND c.id = #{office.id}
+			</if>
+			<if test="ids!=null and ids!=''">
+				AND a.create_by IN
+				<foreach collection="ids" index="index" item="item" open="(" separator="," close=")">
+					#{item}
+				</foreach>
+			</if>
+		</where>
+		<choose>
+			<when test="page !=null and page.orderBy != null and page.orderBy != ''">
+				ORDER BY ${page.orderBy}
+			</when>
+			<otherwise>
+				ORDER BY a.update_date DESC
+			</otherwise>
+		</choose>
+	</select>
+	
+	<select id="findList2" resultType="EduHomework" >
+		SELECT 
+			a.id AS "id",
+			a.name AS "name",
+			a.requirement AS "requirement",
+			c.status AS "status",
+			a.subject AS "subject",
+			a.create_by AS "createBy.id",
+			a.create_date AS "createDate",
+			a.update_by AS "updateBy.id",
+			a.update_date AS "updateDate",
+			a.remarks AS "remarks",
+			a.del_flag AS "delFlag",
+			a.arrange_time AS "arrangeTime",
+			
+			b.name AS "createBy.name"
+		FROM edu_homework_arrange c
+		join edu_homework a on c.homework = a.id
+		left join sys_user b on a.create_by = b.id
+		<where>
+			${dataScope}
+			<if test="student != null and student != ''">
+				AND c.student = #{student}
+			</if>
+			<if test="name != null and name != ''">
+				AND a.name LIKE 
+					<if test="dbName == 'oracle'">'%'||#{name}||'%'</if>
+					<if test="dbName == 'mssql'">'%'+#{name}+'%'</if>
+					<if test="dbName == 'mysql'">concat('%',#{name},'%')</if>
+			</if>
+			<if test="status != null and status != ''">
+				AND c.status = #{status}
+			</if>
+			<if test="subject != null and subject != ''">
+				AND a.subject = #{subject}
+			</if>
+			<if test="createBy != null and createBy.id != null and createBy.id != ''">
+				AND a.create_by = #{createBy.id}
+			</if>
+		</where>
+		<choose>
+			<when test="page !=null and page.orderBy != null and page.orderBy != ''">
+				ORDER BY ${page.orderBy}
+			</when>
+			<otherwise>
+				ORDER BY a.update_date DESC
+			</otherwise>
+		</choose>
+	</select>
+	
+	<select id="findAllList" resultType="EduHomework" >
+		SELECT 
+			<include refid="eduHomeworkColumns"/>
+		FROM edu_homework a
+		<include refid="eduHomeworkJoins"/>
+		<where>
+			a.del_flag = #{DEL_FLAG_NORMAL}
+			${dataScope}
+			AND a.status != '0'
+			<if test="name != null and name != ''">
+				AND a.name LIKE 
+					<if test="dbName == 'oracle'">'%'||#{name}||'%'</if>
+					<if test="dbName == 'mssql'">'%'+#{name}+'%'</if>
+					<if test="dbName == 'mysql'">concat('%',#{name},'%')</if>
+			</if>
+			<if test="subject != null and subject != ''">
+				AND a.subject = #{subject}
+			</if>
+		</where>		
+		<choose>
+			<when test="page !=null and page.orderBy != null and page.orderBy != ''">
+				ORDER BY ${page.orderBy}
+			</when>
+			<otherwise>
+				ORDER BY a.update_date DESC
+			</otherwise>
+		</choose>
+	</select>
+	
+	<insert id="insert">
+		INSERT INTO edu_homework(
+			id,
+			name,
+			requirement,
+			status,
+			subject,
+			create_by,
+			create_date,
+			update_by,
+			update_date,
+			remarks,
+			del_flag
+		) VALUES (
+			#{id},
+			#{name},
+			#{requirement},
+			'0',
+			#{subject},
+			#{createBy.id},
+			#{createDate},
+			#{updateBy.id},
+			#{updateDate},
+			#{remarks},
+			#{delFlag}
+		)
+	</insert>
+	
+	<update id="update">
+		UPDATE edu_homework SET 	
+			requirement = #{requirement},
+			name = #{name}
+			status = #{status},
+			subject = #{subject},
+			update_by = #{updateBy.id},
+			update_date = #{updateDate},
+			remarks = #{remarks}
+		WHERE id = #{id}
+	</update>
+	
+	
+	<!--物理删除-->
+	<update id="delete">
+		DELETE FROM edu_homework
+		WHERE id = #{id}
+	</update>
+	
+	<!--逻辑删除-->
+	<update id="deleteByLogic">
+		UPDATE edu_homework SET 
+			del_flag = #{DEL_FLAG_DELETE}
+		WHERE id = #{id}
+	</update>
+	
+	
+	<!-- 根据实体名称和字段名称和字段值获取唯一记录 -->
+	<select id="findUniqueByProperty" resultType="EduHomework" statementType="STATEMENT">
+		select * FROM edu_homework  where ${propertyName} = '${value}'
+	</select>
+	
+	<select id="findClasses" resultType="java.lang.String">
+		select a.name from edu_classes a
+		where id in
+		(select DISTINCT b.classes from edu_homework_arrange b
+		where b.homework = #{homeworkId})
+	</select>
+	
+	<select id="findQuestionsCount" resultType="java.util.Map">
+		select b.questiontype ,count(*) as count from edu_homework_question a
+		inner join edu_questiontree b on a.question = b.id
+		where a.homework=#{homeworkId}
+		group by b.questiontype
+	</select>
+	
+	<select id="findStudentsCount" resultType="java.util.Map">
+		select (select count(*) from edu_homework_arrange where homework = #{homeworkId}) as totalCount,
+		(select count(*) from edu_homework_arrange where status = '1' and homework = #{homeworkId}) as submitCount
+	</select>
+	
+	<select id="findQuestionList" resultType="EduQuestionTree">
+		select b.* 
+		<if test="student != null and student != ''">
+			,c.answer as studentAnswer,c.is_correct as isCorrect
+		</if>
+		from edu_homework_question a
+		inner join edu_questiontree b on a.question = b.id
+		<if test="student != null and student != ''">
+			LEFT JOIN edu_homework_submit c 
+			on a.homework=c.homework and a.question = c.question and c.student=#{student}
+		</if>
+		where a.homework = #{id}
+		<if test="questiontype != null and questiontype != ''">
+			AND b.questiontype = #{questiontype}
+		</if>
+		order by b.questiontype asc,a.create_date asc
+	</select>
+	
+	<select id="findIfAnswered" resultType="EduHomeworkSubmit" parameterType="EduHomeworkSubmit">
+		select * from edu_homework_submit
+		where homework = #{homework} and student = #{student} and question = #{question}
+	</select>
+	
+	<delete id="delAnswers">
+		delete from edu_homework_submit
+		where homework = #{homework} and student = #{student}
+	</delete>
+	
+	<update id="updateHomeworkSubmit">
+		update edu_homework_submit set answer = #{answer}
+		where id = #{id}
+	</update>
+	
+	<insert id="insertHomeworkSubmit">
+		insert into edu_homework_submit
+		(id,homework,classes,student,question,answer,is_correct,create_by,create_date,update_by,update_date,del_flag)
+		values
+		(#{id},#{homework},#{classes},#{student},#{question},#{studentAnswer},#{isCorrect},#{createBy},now(),#{updateBy},now(),'0')
+	</insert>
+	
+	<insert id="insertAllHomeworkSubmit">
+		insert into edu_homework_submit
+		(id,homework,classes,student,question,answer,is_correct,create_date,update_date,del_flag)
+		values
+		<foreach collection ="list" item="item" separator =",">
+         (#{item.id},#{item.homework},#{item.classes},#{item.student},#{item.question},#{item.studentAnswer},#{item.isCorrect},#{item.createDate},#{item.createDate},'0')
+    	</foreach >
+	</insert>
+	
+	<select id="findStudentAnswerList" resultType="EduHomeworkSubmit">
+		select * from edu_homework_submit
+		where homework = #{homework} and student = #{student}
+	</select>
+	
+	<select id="findHomeworkStudents" resultType="EduHomeworkArrange">
+		select a.update_date as time,a.status,b.id,b.name as studentName,b.photo as head_img,a.status from edu_homework_arrange a
+		left join sys_user b on a.student = b.id
+		where a.homework = #{homework}
+		<if test="status != null and status != 0">
+			AND a.status != '0'
+		</if>
+		<if test="status != null and status == 0">
+			AND a.status = '0'
+		</if>
+		<if test="classes != null and classes != ''">
+			AND a.classes = #{classes}
+		</if>
+	</select>
+	
+	<update id="updateSubjective">
+		update edu_homework_submit set is_correct = #{isCorrect}
+		where student = #{student} and homework = #{homework} and question = #{question}
+	</update>
+	
+	<update id="completeCorrect">
+		update edu_homework_arrange set 
+		status = #{status},comment = #{comment}
+		where student = #{student} and homework = #{homework}
+	</update>
+	
+	<update id="updateHomeworkArrange">
+		update edu_homework_arrange set status = '1',update_date = now()
+		where homework = #{homework} and status = '0'
+		<if test="student != null and student != ''">
+			AND student = #{student}
+		</if>
+	</update>
+	
+	<update id="updateStatus">
+		update edu_homework set arrange_time = now(),status = #{status}
+		where id = #{id}
+	</update>
+	
+	<select id="getNoCorrectCount" resultType="java.lang.Integer">
+		select count(*) from edu_homework_arrange
+		where homework = #{homework} and status != '2'
+	</select>
+	
+	<select id="getAllNoSubmitStudent" resultType="EduHomeworkArrange" >
+		select student,classes from edu_homework_arrange
+		where homework = #{id} and status = '0'
+	</select>
+</mapper>

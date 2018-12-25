@@ -1,0 +1,177 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.jeeplus.modules.school.studentclass.mapper.EduStudentClassMapper">
+    
+	<sql id="eduStudentClassColumns">
+		a.id AS "id",
+		a.student AS "user.id",
+		a.class AS "classes.id",
+		a.create_by AS "createBy.id",
+		a.create_date AS "createDate",
+		a.update_by AS "updateBy.id",
+		a.update_date AS "updateDate",
+		a.remarks AS "remarks",
+		a.del_flag AS "status",
+				
+		user.name AS "user.name",
+		user.login_name AS "user.loginName",
+		classes.study_year AS "studyYear",
+		classes.name AS "classes.name",
+		office.name AS "office.name",
+		office.id AS "office.id"
+	</sql>
+	
+	<sql id="eduStudentClassJoins">
+		
+		LEFT JOIN sys_user user ON user.id = a.student
+		LEFT JOIN edu_classes classes ON classes.id = a.class
+		LEFT JOIN sys_office office on user.office_id = office.id
+	</sql>
+	
+    
+	<select id="get" resultType="EduStudentClass" >
+		SELECT 
+			<include refid="eduStudentClassColumns"/>
+		FROM edu_student_class a
+		<include refid="eduStudentClassJoins"/>
+		WHERE a.id = #{id}
+	</select>
+	
+	<select id="findList" resultType="EduStudentClass" >
+		SELECT 
+			<include refid="eduStudentClassColumns"/>
+		FROM edu_student_class a
+		<include refid="eduStudentClassJoins"/>
+		<where>
+			a.del_flag = #{DEL_FLAG_NORMAL}
+			${dataScope}
+			<if test="user != null and user.id != null and user.id != ''">
+				AND a.student = #{user.id}
+			</if>
+			<if test="user != null and user.name != null and user.name != ''">
+				AND user.name like concat('%',#{user.name},'%') 
+			</if>
+			<if test="classes != null and classes.id != null and classes.id != ''">
+				AND a.class = #{classes.id}
+			</if>
+			<if test="office != null and office.id != null and office.id != ''">
+				AND classes.office_id = #{office.id}
+			</if>
+			<if test="studyYear != null and studyYear != ''">
+				AND a.study_year = #{studyYear}
+			</if>
+		</where>
+		<choose>
+			<when test="page !=null and page.orderBy != null and page.orderBy != ''">
+				ORDER BY ${page.orderBy}
+			</when>
+			<otherwise>
+				ORDER BY a.update_date DESC
+			</otherwise>
+		</choose>
+	</select>
+	
+	<select id="findAllList" resultType="EduStudentClass" >
+		SELECT 
+			<include refid="eduStudentClassColumns"/>
+		FROM edu_student_class a
+		<include refid="eduStudentClassJoins"/>
+		<where>
+			a.del_flag = #{DEL_FLAG_NORMAL}
+			${dataScope}
+		</where>		
+		<choose>
+			<when test="page !=null and page.orderBy != null and page.orderBy != ''">
+				ORDER BY ${page.orderBy}
+			</when>
+			<otherwise>
+				ORDER BY a.update_date DESC
+			</otherwise>
+		</choose>
+	</select>
+	
+	<insert id="insert">
+		INSERT INTO edu_student_class(
+			id,
+			student,
+			class,
+			create_by,
+			create_date,
+			update_by,
+			update_date,
+			remarks,
+			del_flag
+		) VALUES (
+			#{id},
+			#{user.id},
+			#{classes.id},
+			#{createBy.id},
+			#{createDate},
+			#{updateBy.id},
+			#{updateDate},
+			#{remarks},
+			#{delFlag}
+		)
+	</insert>
+	
+	<update id="update">
+		UPDATE edu_student_class SET 	
+			student = #{user.id},
+			class = #{classes.id},
+			update_by = #{updateBy.id},
+			update_date = #{updateDate},
+			remarks = #{remarks}
+		WHERE id = #{id}
+	</update>
+	
+	
+	<!--物理删除-->
+	<update id="delete">
+		DELETE FROM edu_student_class
+		WHERE id = #{id}
+	</update>
+	
+	<!--逻辑删除-->
+	<update id="deleteByLogic">
+		UPDATE edu_student_class SET 
+			del_flag = #{DEL_FLAG_DELETE}
+		WHERE id = #{id}
+	</update>
+	
+	
+	<!-- 根据实体名称和字段名称和字段值获取唯一记录 -->
+	<select id="findUniqueByProperty" resultType="EduStudentClass" statementType="STATEMENT">
+		select * FROM edu_student_class  where ${propertyName} = '${value}'
+	</select>
+	
+	<!-- 根据学生查询是否已分配班级 -->
+	<select id="selectByStudent" resultType="EduStudentClass">
+		SELECT sc.* FROM edu_student_class sc 
+		JOIN edu_classes class1 ON sc.class = class1.id
+		WHERE student=#{user.id} AND class1.study_year = 
+		(SELECT class2.study_year FROM edu_classes class2 WHERE class2.id=#{classes.id})
+	</select>
+	
+	<!-- 根据学生查询班级 -->
+	<select id="selectClassesByStudent" resultType="EduClasses">
+		SELECT class1.* FROM edu_student_class sc 
+		JOIN edu_classes class1 ON sc.class = class1.id
+		WHERE sc.student = #{studentId}
+		order by sc.create_date desc
+		limit 1
+	</select>
+	
+	<!-- 根据班级查询学生 -->
+	<select id="selectStudentByClasses" resultType="java.lang.String">
+		SELECT a.student FROM edu_student_class a 
+		WHERE a.class = #{classesId}
+	</select>
+	
+	<select id="selectClassesByTeacher" resultType="java.util.Map">
+		select b.id,b.name from edu_teacher_class a 
+		inner join edu_classes b on a.class = b.id
+		where a.teacher = #{teacherId}
+		order by b.create_date asc
+	</select>
+	
+</mapper>

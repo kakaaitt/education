@@ -1,0 +1,254 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.jeeplus.modules.school.textbook.mapper.TextbookMapper">
+
+    <resultMap id="textbookResult" type="Textbook">
+   		<result property="id" column="id" />
+		<result property="name" column="name" />
+		<result property="sort" column="sort" />
+		<result property="parentIds" column="parentIds" />
+		<result property="pressid" column="pressid" />
+		<result property="grade" column="grade" />
+		<result property="subjectid" column="subjectid" />
+		<association property="hasChildren" column="id" select="hasChildren" />
+    </resultMap>
+    
+	<sql id="textbookColumns">
+		a.id AS "id",
+		a.name AS "name",
+		a.pressid AS "pressid",
+		a.parent_id AS "parent.id",
+		a.parent_ids AS "parentIds",
+		a.sort AS "sort",
+		a.create_by AS "createBy.id",
+		a.create_date AS "createDate",
+		a.update_by AS "updateBy.id",
+		a.update_date AS "updateDate",
+		a.del_flag AS "delFlag",
+		a.remarks AS "remarks",
+		a.grade AS "grade",
+		a.subjectid AS "subjectid"
+	</sql>
+	
+
+	
+
+	<sql id="textbookJoins">
+		
+	</sql>
+	
+
+    
+	<select id="get" resultType="Textbook">
+		SELECT 
+			<include refid="textbookColumns"/>
+		FROM edu_textbook a
+		<include refid="textbookJoins"/>
+		WHERE a.id = #{id}
+	</select>
+	
+	<select id="findTextByUserId" resultType="map" parameterType="string">
+		select a.id,a.subjectid,b.teacher,b.main_subject from edu_textbook a ,edu_teacher_class b 
+			where a.remarks=0 and a.del_flag=0 
+			and a.subjectid=b.subject 
+			and b.teacher=#{userId}
+	</select>
+	
+	<select id="findList" resultType="Textbook">
+		SELECT 
+			<include refid="textbookColumns"/>
+		FROM edu_textbook a
+		<include refid="textbookJoins"/>
+		<where>
+			a.del_flag = #{DEL_FLAG_NORMAL}
+			${dataScope}
+			<if test="name != null and name != ''">
+				AND a.name LIKE 
+					<if test="dbName == 'oracle'">'%'||#{name}||'%'</if>
+					<if test="dbName == 'mssql'">'%'+#{name}+'%'</if>
+					<if test="dbName == 'mysql'">concat('%',#{name},'%')</if>
+			</if>
+			<if test="pressid != null and pressid != ''">
+				AND a.pressid = #{pressid}
+			</if>
+			<if test="remarks != null and remarks != ''">
+				AND a.remarks = #{remarks}
+			</if>
+			<if test="parent != null and parent.id != null and parent.id != ''">
+				AND a.parent_id = #{parent.id}
+			</if>
+			<if test="parentIds != null and parentIds != ''">
+				AND a.parent_ids LIKE 
+					<if test="dbName == 'oracle'">'%'||#{parentIds}||'%'</if>
+					<if test="dbName == 'mssql'">'%'+#{parentIds}+'%'</if>
+					<if test="dbName == 'mysql'">concat('%',#{parentIds},'%')</if>
+			</if>
+			<if test="grade != null and grade != ''">
+				AND a.grade = #{grade}
+			</if>
+		</where>
+		ORDER BY a.sort ASC
+	</select>
+	<!-- 	获取一级 -->
+	<select id="findFirstList" resultType="Textbook">
+		SELECT 
+			<include refid="textbookColumns"/>
+		FROM edu_textbook a
+		<include refid="textbookJoins"/>
+		<where>
+			a.del_flag = #{DEL_FLAG_NORMAL} and a.remarks='0'
+			${dataScope}
+			<if test="name != null and name != ''">
+				AND a.name LIKE 
+					<if test="dbName == 'oracle'">'%'||#{name}||'%'</if>
+					<if test="dbName == 'mssql'">'%'+#{name}+'%'</if>
+					<if test="dbName == 'mysql'">concat('%',#{name},'%')</if>
+			</if>
+			<if test="pressid != null and pressid != ''">
+				AND a.pressid = #{pressid}
+			</if>
+			<if test="parent != null and parent.id != null and parent.id != ''">
+				AND a.parent_id = #{parent.id}
+			</if>
+			<if test="parentIds != null and parentIds != ''">
+				AND a.parent_ids LIKE 
+					<if test="dbName == 'oracle'">'%'||#{parentIds}||'%'</if>
+					<if test="dbName == 'mssql'">'%'+#{parentIds}+'%'</if>
+					<if test="dbName == 'mysql'">concat('%',#{parentIds},'%')</if>
+			</if>
+		</where>
+		ORDER BY a.sort ASC
+	</select>
+	<!-- 	获取单棵树 -->
+	<select id="findTreeList" resultType="Textbook">
+		SELECT 
+			<include refid="textbookColumns"/>
+		FROM edu_textbook a
+		<include refid="textbookJoins"/>
+		<where>
+			a.del_flag = #{DEL_FLAG_NORMAL}
+			${dataScope}
+			<if test="parentIds != null and parentIds != ''">
+			AND (a.id = REPLACE(#{parentIds},',','')
+				 OR
+				 a.parent_ids LIKE 
+					<if test="dbName == 'oracle'">'%'||#{parentIds}||'%'</if>
+					<if test="dbName == 'mssql'">'%'+#{parentIds}+'%'</if>
+					<if test="dbName == 'mysql'">concat('%',#{parentIds},'%')</if>
+				)
+			</if>
+		</where>
+		ORDER BY a.sort ASC
+	</select>
+	<select id="findAllList" resultType="Textbook">
+		SELECT 
+			<include refid="textbookColumns"/>
+		FROM edu_textbook a
+		<include refid="textbookJoins"/>
+		<where>
+			a.del_flag = #{DEL_FLAG_NORMAL}
+			${dataScope}
+		</where>
+		ORDER BY a.sort ASC
+	</select>
+	
+	<select id="getChildren" parameterType="String" resultMap="textbookResult">  
+        select * from edu_textbook where parent_id = #{id} ORDER BY sort 
+    </select> 
+     
+    <select id="hasChildren" parameterType="String" resultType="Boolean">
+        select case when exists(select 1 from edu_textbook where parent_id = #{id}) then 1 else 0 end ${dual}
+    </select>
+    
+	<select id="findByParentIdsLike" resultType="Textbook">
+		SELECT
+			a.id,
+			a.parent_id AS "parent.id",
+			a.parent_ids
+		FROM edu_textbook a
+		<include refid="textbookJoins"/>
+		<where>
+			a.del_flag = #{DEL_FLAG_NORMAL}
+			AND a.parent_ids LIKE #{parentIds}
+		</where>
+		ORDER BY a.sort ASC
+	</select>
+	
+	<insert id="insert">
+		INSERT INTO edu_textbook(
+			id,
+			name,
+			pressid,
+			parent_id,
+			parent_ids,
+			sort,
+			create_by,
+			create_date,
+			update_by,
+			update_date,
+			del_flag,
+			remarks,
+			grade,
+			subjectid,
+			schoolid
+		) VALUES (
+			#{id},
+			#{name},
+			#{pressid},
+			#{parent.id},
+			#{parentIds},
+			#{sort},
+			#{createBy.id},
+			#{createDate},
+			#{updateBy.id},
+			#{updateDate},
+			#{delFlag},
+			#{remarks},
+			#{grade},
+			#{subjectid},
+			#{schoolid}
+		)
+	</insert>
+	
+	<update id="update">
+		UPDATE edu_textbook SET 	
+			name = #{name},
+			pressid = #{pressid},
+			parent_id = #{parent.id},
+			parent_ids = #{parentIds},
+			sort = #{sort},
+			update_by = #{updateBy.id},
+			update_date = #{updateDate},
+			remarks = #{remarks},
+			grade = #{grade},
+			subjectid = #{subjectid}
+		WHERE id = #{id}
+	</update>
+	
+	<update id="updateParentIds">
+		UPDATE edu_textbook SET 
+			parent_id = #{parent.id}, 
+			parent_ids = #{parentIds}
+		WHERE id = #{id}
+	</update>
+	
+	<!--物理删除-->
+	<update id="delete">
+		DELETE FROM edu_textbook
+		WHERE id = #{id} OR parent_ids LIKE 
+		<if test="dbName == 'oracle'">'%,'||#{id}||',%'</if>
+		<if test="dbName == 'mssql'">'%,'+#{id}+',%'</if>
+        <if test="dbName == 'mysql'">CONCAT('%,', #{id}, ',%')</if>
+	</update>
+	
+	<!--逻辑删除-->
+	<update id="deleteByLogic">
+		UPDATE edu_textbook SET 
+			del_flag = #{DEL_FLAG_DELETE}
+		WHERE id = #{id} OR parent_ids LIKE 
+		<if test="dbName == 'oracle'">'%,'||#{id}||',%'</if>
+		<if test="dbName == 'mssql'">'%,'+#{id}+',%'</if>
+        <if test="dbName == 'mysql'">CONCAT('%,', #{id}, ',%')</if>
+	</update>
+	
+</mapper>

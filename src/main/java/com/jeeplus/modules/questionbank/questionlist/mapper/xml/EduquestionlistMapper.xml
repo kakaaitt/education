@@ -1,0 +1,120 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.jeeplus.modules.questionbank.questionlist.mapper.EduquestionlistMapper">
+    
+	<sql id="eduquestionlistColumns">
+		a.id AS "id",
+		a.subjectid AS "subjectid",
+		a.teacher AS "teacher",
+		a.main_subject AS "main_subject",
+		a.login_name AS "login_name",
+		a.shoolid as 
+	</sql>
+	
+	<sql id="eduquestionlistJoins">
+		
+	</sql>
+	
+    
+	<select id="get" resultType="Eduquestionlist" >
+		SELECT 
+			<include refid="eduquestionlistColumns"/>
+		FROM edu_question_list a
+		<include refid="eduquestionlistJoins"/>
+		WHERE a.id = #{id}
+	</select>
+	
+	<select id="findList" resultType="Eduquestionlist" >
+		select a.id,
+		a.subjectid,
+		b.teacher,
+		b.main_subject as mainsubject,
+		c.login_name as loginname,
+		a.grade,
+		e.name as schoolname 
+		from edu_textbook a ,edu_teacher_class b ,sys_user c,edu_classes d,sys_office e   
+		where a.remarks=0 and b.teacher = c.id  
+		and a.del_flag=0 and a.subjectid=b.subject 
+        and a.grade=d.grade 
+        and b.class=d.id 
+        and a.schoolid=c.office_id 
+        and a.schoolid=e.id 
+		<if test="teacher != null and teacher != 'admin'">
+		and b.teacher=#{teacher}
+		</if>
+		<if test="createBy != null ">
+		and a.schoolid=#{createBy.office.id}
+		</if>
+		<choose>
+			<when test="page !=null and page.orderBy != null and page.orderBy != ''">
+				ORDER BY ${page.orderBy}
+			</when>
+			<otherwise>
+			</otherwise>
+		</choose>
+	</select>
+	
+	<select id="findAllList" resultType="Eduquestionlist" >
+		SELECT 
+			<include refid="eduquestionlistColumns"/>
+		FROM edu_question_list a
+		<include refid="eduquestionlistJoins"/>
+		<where>
+			
+			${dataScope}
+		</where>		
+		<choose>
+			<when test="page !=null and page.orderBy != null and page.orderBy != ''">
+				ORDER BY ${page.orderBy}
+			</when>
+			<otherwise>
+			</otherwise>
+		</choose>
+	</select>
+	
+	<insert id="insert">
+		INSERT INTO edu_question_list(
+			id,
+			subjectid,
+			teacher,
+			main_subject,
+			login_name
+		) VALUES (
+			#{id},
+			#{subjectid},
+			#{teacher},
+			#{main_subject},
+			#{login_name}
+		)
+	</insert>
+	
+	<update id="update">
+		UPDATE edu_question_list SET 	
+			subjectid = #{subjectid},
+			teacher = #{teacher},
+			main_subject = #{main_subject},
+			login_name = #{login_name}
+		WHERE id = #{id}
+	</update>
+	
+	
+	<!--物理删除-->
+	<update id="delete">
+		DELETE FROM edu_question_list
+		WHERE id = #{id}
+	</update>
+	
+	<!--逻辑删除-->
+	<update id="deleteByLogic">
+		UPDATE edu_question_list SET 
+			del_flag = #{DEL_FLAG_DELETE}
+		WHERE id = #{id}
+	</update>
+	
+	
+	<!-- 根据实体名称和字段名称和字段值获取唯一记录 -->
+	<select id="findUniqueByProperty" resultType="Eduquestionlist" statementType="STATEMENT">
+		select * FROM edu_question_list  where ${propertyName} = '${value}'
+	</select>
+	
+</mapper>

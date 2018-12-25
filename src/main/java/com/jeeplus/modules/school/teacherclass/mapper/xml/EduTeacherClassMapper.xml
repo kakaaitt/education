@@ -1,0 +1,205 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.jeeplus.modules.school.teacherclass.mapper.EduTeacherClassMapper">
+    
+	<sql id="eduTeacherClassColumns">
+		a.id AS "id",
+		a.teacher AS "user.id",
+		a.class AS "classes.id",
+		a.subject AS "subject",
+		a.main_subject AS "mainSubject",
+		a.create_by AS "createBy.id",
+		a.create_date AS "createDate",
+		a.update_by AS "updateBy.id",
+		a.update_date AS "updateDate",
+		a.remarks AS "remarks",
+		a.del_flag AS "status",
+				
+		user.name AS "user.name",
+		user.login_name AS "user.loginName",
+		classes.study_year AS "studyYear",		
+		classes.name AS "classes.name",
+		classes.grade AS "classes.grade",
+		office.name AS "office.name",
+		office.id AS "office.id"
+	</sql>
+	
+	<sql id="eduTeacherClassJoins">
+		LEFT JOIN sys_user user ON user.id = a.teacher
+		LEFT JOIN sys_office office on user.office_id = office.id
+		LEFT JOIN edu_classes classes ON classes.id = a.class
+	</sql>
+	
+    
+	<select id="get" resultType="EduTeacherClass" >
+		SELECT 
+			<include refid="eduTeacherClassColumns"/>
+		FROM edu_teacher_class a
+		<include refid="eduTeacherClassJoins"/>
+		WHERE a.id = #{id}
+	</select>
+	
+	<select id="findList" resultType="EduTeacherClass" >
+		SELECT 
+			<include refid="eduTeacherClassColumns"/>
+		FROM edu_teacher_class a
+		<include refid="eduTeacherClassJoins"/>
+		<where>
+			${dataScope}
+			<if test="user != null and user.id != null and user.id != ''">
+				AND a.teacher = #{user.id}
+			</if>
+			<if test="classes != null and classes.id != null and classes.id != ''">
+				AND a.class = #{classes.id}
+			</if>
+			<if test="office != null and office.id != null and office.id != ''">
+				AND classes.office_id = #{office.id}
+			</if>
+			<if test="user != null and user.name != null and user.name != ''">
+				AND user.name like concat('%',#{user.name},'%')
+			</if>
+			<if test="subject != null and subject != ''">
+				AND a.subject = #{subject}
+			</if>
+			<if test="classes != null and classes.grade != null and classes.grade != ''">
+				AND classes.grade = #{classes.grade}
+			</if>
+			<if test="mainSubject != null and mainSubject != ''">
+				AND a.main_subject = #{mainSubject}
+			</if>
+			<if test="studyYear != null and studyYear != ''">
+				AND classes.study_year = #{studyYear}
+			</if>
+		</where>
+		<choose>
+			<when test="page !=null and page.orderBy != null and page.orderBy != ''">
+				ORDER BY ${page.orderBy}
+			</when>
+			<otherwise>
+				ORDER BY a.update_date DESC
+			</otherwise>
+		</choose>
+	</select>
+	
+	<select id="findAllList" resultType="EduTeacherClass" >
+		SELECT 
+			<include refid="eduTeacherClassColumns"/>
+		FROM edu_teacher_class a
+		<include refid="eduTeacherClassJoins"/>
+		<where>
+			a.del_flag = #{DEL_FLAG_NORMAL}
+			${dataScope}
+		</where>		
+		<choose>
+			<when test="page !=null and page.orderBy != null and page.orderBy != ''">
+				ORDER BY ${page.orderBy}
+			</when>
+			<otherwise>
+				ORDER BY a.update_date DESC
+			</otherwise>
+		</choose>
+	</select>
+	
+	<insert id="insert">
+		INSERT INTO edu_teacher_class(
+			id,
+			teacher,
+			class,
+			subject,
+			main_subject,
+			create_by,
+			create_date,
+			update_by,
+			update_date,
+			remarks,
+			del_flag
+		) VALUES (
+			#{id},
+			#{user.id},
+			#{classes.id},
+			#{subject},
+			#{mainSubject},
+			#{createBy.id},
+			#{createDate},
+			#{updateBy.id},
+			#{updateDate},
+			#{remarks},
+			#{delFlag}
+		)
+	</insert>
+	
+	<update id="update">
+		UPDATE edu_teacher_class SET 	
+			teacher = #{user.id},
+			class = #{classes.id},
+			subject = #{subject},
+			main_subject = #{mainSubject},
+			update_by = #{updateBy.id},
+			update_date = #{updateDate},
+			remarks = #{remarks}
+		WHERE id = #{id}
+	</update>
+	
+	
+	<!--物理删除-->
+	<update id="delete">
+		DELETE FROM edu_teacher_class
+		WHERE id = #{id}
+	</update>
+	
+	<!--逻辑删除-->
+	<update id="deleteByLogic">
+		UPDATE edu_teacher_class SET 
+			del_flag = #{DEL_FLAG_DELETE}
+		WHERE id = #{id}
+	</update>
+	
+	
+	<!-- 根据实体名称和字段名称和字段值获取唯一记录 -->
+	<select id="findUniqueByProperty" resultType="EduTeacherClass" statementType="STATEMENT">
+		select * FROM edu_teacher_class  where ${propertyName} = '${value}'
+	</select>
+	
+	<!-- 查询老师是否重复分配班级 -->
+	<select id="selectByTeacher" resultType="EduTeacherClass">
+		SELECT * FROM edu_teacher_class 
+		WHERE teacher = #{user.id} AND class = #{classes.id} AND subject = #{subject}
+	</select>
+	
+	<!-- 查询老师是否已分配主学科 -->
+	<select id="selectHasMainSubject" resultType="EduTeacherClass">
+		SELECT * FROM edu_teacher_class 
+		WHERE teacher = #{user.id} AND class = #{classes.id} AND main_subject = '0'
+	</select>
+	
+	<!-- 根据老师查询班级 -->
+	<select id="selectClassesByTeacher" resultType="EduClasses">
+		SELECT class1.* FROM edu_teacher_class tc 
+		JOIN edu_classes class1 ON tc.class = class1.id
+		WHERE tc.teacher = #{teacherId}
+		order by tc.create_date desc
+		limit 1
+	</select>
+	
+	<select	id="findTeachersByStudent" resultType="EduTeacherClass">
+		SELECT 
+		<include refid="eduTeacherClassColumns"/>
+		FROM edu_teacher_class a
+		<include refid="eduTeacherClassJoins"/>
+		JOIN edu_student_class s ON a.class = s.class
+		WHERE s.student = #{studentId}
+	</select>
+	
+	<select id="getByTeacher" resultType="EduTeacherClass" >
+		SELECT 
+			<include refid="eduTeacherClassColumns"/>
+		FROM edu_teacher_class a
+		<include refid="eduTeacherClassJoins"/>
+		WHERE a.teacher = #{id}
+		order by a.create_date asc
+	</select>
+	
+	<select id="getclassesIdsByTeacher" resultType="java.lang.String">
+		select b.class from edu_teacher_class b where teacher = #{teacherId}
+	</select>
+</mapper>

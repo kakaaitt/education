@@ -1,0 +1,188 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.jeeplus.modules.questionbank.questions.mapper.EduQuestionMapper">
+    
+	<sql id="eduQuestionColumns">
+		a.id AS "id",
+		a.questiontype AS "questionType",
+		a.questionbanktype AS "questionBankType",
+		a.questiontext AS "questionText",
+		a.options AS "options",
+		a.answer AS "answer",
+		a.analy AS "analy",
+		a.subject AS "subject",
+		a.grade AS "grade",
+		a.sharetype AS "shareType",
+		a.publicnnum AS "publicnNum",
+		a.create_by AS "createBy.loginName",
+		a.create_date AS "createDate",
+		a.update_by AS "updateBy.loginName",
+		a.update_date AS "updateDate",
+		a.remarks AS "remarks",
+		a.del_flag AS "delFlag",
+		
+		c.office_id AS "createBy.office.id"
+	</sql>
+	
+	<sql id="eduQuestionJoins">
+		left join edu_material_question b on a.id = b.question_id
+		left join sys_user c on a.create_by = c.login_name
+	</sql>
+	
+    
+	<select id="get" resultType="EduQuestion" >
+		SELECT 
+			<include refid="eduQuestionColumns"/>
+		FROM edu_question a
+		<include refid="eduQuestionJoins"/>
+		WHERE a.id = #{id}
+	</select>
+	
+	<select id="findList" resultType="EduQuestion" >
+		SELECT 
+			<include refid="eduQuestionColumns"/>
+		FROM edu_question a
+		<include refid="eduQuestionJoins"/>
+		<where>
+			a.del_flag = #{DEL_FLAG_NORMAL}
+			${dataScope}
+			<if test="questionType != null and questionType != ''">
+				AND a.questiontype = #{questionType}
+			</if>
+			<if test="questionBankType != null and questionBankType != ''">
+				AND a.questionbanktype = #{questionBankType}
+			</if>
+			<if test="shareType != null and shareType != ''">
+				AND a.sharetype = #{shareType}
+			</if>
+			<if test="chapterId != null and chapterId != ''">
+				AND b.chapter_id = #{chapterId}
+			</if>
+			<if test="createBy != null and createBy.loginName != null and createBy.loginName != ''">
+				AND (a.create_by = #{createBy.loginName} or a.sharetype = '1')
+			</if>
+			<if test="loginNames!=null and loginNames!=''">
+				AND (a.create_by IN
+				<foreach collection="loginNames" index="index" item="item" open="(" separator="," close=")">
+					#{item}
+				</foreach>
+				 or a.sharetype = '1')
+			</if>
+		</where>
+		<choose>
+			<when test="page !=null and page.orderBy != null and page.orderBy != ''">
+				ORDER BY ${page.orderBy}
+			</when>
+			<otherwise>
+				ORDER BY a.update_date DESC
+			</otherwise>
+		</choose>
+	</select>
+	
+	<select id="findAllList" resultType="EduQuestion" >
+		SELECT 
+			<include refid="eduQuestionColumns"/>
+		FROM edu_question a
+		<include refid="eduQuestionJoins"/>
+		<where>
+			a.del_flag = #{DEL_FLAG_NORMAL}
+			${dataScope}
+		</where>		
+		<choose>
+			<when test="page !=null and page.orderBy != null and page.orderBy != ''">
+				ORDER BY ${page.orderBy}
+			</when>
+			<otherwise>
+				ORDER BY a.update_date DESC
+			</otherwise>
+		</choose>
+	</select>
+	
+	<insert id="insert">
+		INSERT INTO edu_question(
+			id,
+			questiontype,
+			questionbanktype,
+			questiontext,
+			options,
+			answer,
+			analy,
+			subject,
+			grade,
+			sharetype,
+			publicnnum,
+			create_by,
+			create_date,
+			update_by,
+			update_date,
+			remarks,
+			del_flag
+		) VALUES (
+			#{id},
+			#{questionType},
+			#{questionBankType},
+			#{questionText},
+			#{options},
+			#{answer},
+			#{analy},
+			#{subject},
+			#{grade},
+			#{shareType},
+			#{publicnNum},
+			#{createBy.loginName},
+			#{createDate},
+			#{updateBy.loginName},
+			#{updateDate},
+			#{remarks},
+			#{delFlag}
+		)
+	</insert>
+	
+	<update id="update">
+		UPDATE edu_question SET 	
+			questiontype = #{questionType},
+			questionbanktype = #{questionBankType},
+			questiontext = #{questionText},
+			options = #{options},
+			answer = #{answer},
+			analy = #{analy},
+			subject = #{subject},
+			grade = #{grade},
+			sharetype = #{shareType},
+			publicnnum = #{publicnNum},
+			update_by = #{updateBy.loginName},
+			update_date = #{updateDate},
+			remarks = #{remarks}
+		WHERE id = #{id}
+	</update>
+	
+	
+	<!--物理删除-->
+	<update id="delete">
+		DELETE FROM edu_question
+		WHERE id = #{id}
+	</update>
+	
+	<!--逻辑删除-->
+	<update id="deleteByLogic">
+		UPDATE edu_question SET 
+			del_flag = #{DEL_FLAG_DELETE}
+		WHERE id = #{id}
+	</update>
+	
+	
+	<!-- 根据实体名称和字段名称和字段值获取唯一记录 -->
+	<select id="findUniqueByProperty" resultType="EduQuestion" statementType="STATEMENT">
+		select * FROM edu_question  where ${propertyName} = '${value}'
+	</select>
+	
+	<select id="findFilesList" resultType="EduQuestionFiles">
+		select * from edu_question_files where question_id = #{questionId}
+	</select>
+	
+	<select id="findKnowledgesList" resultType="EduKnowledge">
+		select b.* from edu_question_knowledge a
+		inner join edu_knowledge b on a.knowledge = b.id
+		where a.question_id = #{questionId}
+	</select>
+</mapper>

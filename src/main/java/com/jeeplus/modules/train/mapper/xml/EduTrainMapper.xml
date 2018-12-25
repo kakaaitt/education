@@ -1,0 +1,254 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.jeeplus.modules.train.mapper.EduTrainMapper">
+    
+    <sql id="eduTrainColumns">
+		a.id AS "id",
+		a.name AS "name",
+		a.number AS "number",
+		a.classes AS "classes",
+		a.student AS "student",
+		a.subject AS "subject",
+		a.status AS "status",
+		a.score AS "score",
+		a.create_by AS "createBy.id",
+		a.create_date AS "createDate",
+		a.update_by AS "updateBy.id",
+		a.update_date AS "updateDate",
+		a.remarks AS "remarks",
+		a.del_flag AS "delFlag",
+		
+		b.name AS "studentName",
+		c.name AS "classesName",
+		d.name AS "office.name"
+		
+	</sql>
+	
+	<sql id="eduTrainJoins">
+		join sys_user b on a.student = b.id
+		join edu_classes c on a.classes = c.id
+		join sys_office d on b.office_id = d.id
+	</sql>
+	
+    
+	<select id="get" resultType="EduTrain" >
+		SELECT 
+			<include refid="eduTrainColumns"/>
+		FROM edu_train a
+		<include refid="eduTrainJoins"/>
+		WHERE a.id = #{id}
+	</select>
+	
+	<select id="findList" resultType="EduTrain" >
+		SELECT 
+			<include refid="eduTrainColumns"/>
+		FROM edu_train a
+		<include refid="eduTrainJoins"/>
+		<where>
+			a.del_flag = #{DEL_FLAG_NORMAL}
+			${dataScope}
+			<if test="name != null and name != ''">
+				AND a.name LIKE 
+					<if test="dbName == 'oracle'">'%'||#{name}||'%'</if>
+					<if test="dbName == 'mssql'">'%'+#{name}+'%'</if>
+					<if test="dbName == 'mysql'">concat('%',#{name},'%')</if>
+			</if>
+			<if test="studentName != null and studentName != ''">
+				AND b.name like concat('%',#{studentName},'%')
+			</if>
+			<if test="status != null and status != ''">
+				AND a.status = #{status}
+			</if>
+			<if test="classes != null and classes != ''">
+				AND a.classes = #{classes}
+			</if>
+			<if test="subject != null and subject != ''">
+				AND a.subject = #{subject}
+			</if>
+			<if test="office != null and office.id != null and office.id != ''">
+				AND d.id = #{office.id}
+			</if>
+			<if test="classesIds != null and classesIds != ''">
+				AND a.classes in 
+				<foreach collection="classesIds" index="index" item="item" open="(" separator="," close=")">
+					#{item}
+				</foreach>
+			</if>
+		</where>
+		<choose>
+			<when test="page !=null and page.orderBy != null and page.orderBy != ''">
+				ORDER BY ${page.orderBy}
+			</when>
+			<otherwise>
+				ORDER BY a.update_date DESC
+			</otherwise>
+		</choose>
+	</select>
+    
+    <select id="selectList" resultType="EduTrain">
+    	SELECT a.*,(select count(*) from edu_train_submit b where b.train = a.id and b.is_correct = '1') as correctCount,
+    	(select count(*) from edu_train_question c where c.train = a.id) as questionCount
+    	 FROM edu_train a WHERE a.student = #{student}
+    	<if test="subject != null and subject != ''">
+    		AND a.subject = #{subject}
+    	</if>
+    	<if test="status != null and status != ''">
+    		AND a.status = #{status}
+    	</if>
+    </select>
+    
+    <select id="selectMaxNumber" resultType="java.lang.Integer">
+    	SELECT MAX(number) FROM edu_train WHERE student = #{student}
+    </select>
+    
+    <select id="selectClasses" resultType="java.lang.String">
+    	SELECT class FROM edu_student_class WHERE student = #{student}
+    </select>
+    
+    <select id="selectTeacher" resultType="java.lang.String">
+    	SELECT teacher FROM edu_teacher_class WHERE class = #{classes} and subject = #{subject}
+    </select>
+    
+    <select id="selectRandQuestions" resultType="java.lang.String">
+    	<!-- SELECT
+			a.id
+		FROM
+			edu_questiontree a
+		INNER JOIN (
+			SELECT DISTINCT
+				d.question
+			FROM
+				(
+					SELECT
+						b.*
+					FROM
+						edu_homework_question b
+					INNER JOIN edu_questiontree c ON b.question = c.id
+					WHERE
+						b.create_by = #{teacher}
+					AND c.textid = #{textid}
+				) d
+		) e ON a.id = e.question
+		WHERE
+			a.textid = #{textid}
+		AND a.questiontype IN ('1', '2', '3')
+		ORDER BY RAND()
+		LIMIT #{questionCount} -->
+		SELECT
+			b.question
+		FROM
+			(
+				SELECT DISTINCT
+					a.question
+				FROM
+					edu_homework_submit a
+				WHERE
+					student = #{student}
+			) b
+		JOIN edu_questiontree c ON b.question = c.id
+		JOIN edu_textbook d ON c.textid = d.id
+		JOIN edu_textbook e ON substring_index(
+			substring_index(d.parent_ids, ',', 2),
+			',' ,- 1
+		) = e.id
+		WHERE
+			c.questiontype IN ('1', '2', '3') AND e.subjectid = #{subject}
+		ORDER BY RAND()
+		LIMIT #{questionCount}
+    </select>
+    
+    <insert id="insert">
+		INSERT INTO edu_train(
+			id,
+			name,
+			number,
+			classes,
+			student,
+			subject,
+			status,
+			create_by,
+			create_date,
+			update_by,
+			update_date,
+			remarks,
+			del_flag
+		) VALUES (
+			#{id},
+			#{name},
+			#{number},
+			#{classes},
+			#{student},
+			#{subject},
+			'0',
+			#{createBy.id},
+			now(),
+			#{updateBy.id},
+			#{updateDate},
+			#{remarks},
+			'0'
+		)
+	</insert>
+	
+	<insert id="insertTrainQuestion">
+		INSERT INTO edu_train_question(
+			id,
+			train,
+			question,
+			create_date,
+			del_flag
+		) VALUES (
+			#{id},
+			#{train},
+			#{question},
+			now(),
+			'0'
+		)
+	</insert>
+	
+	<select id="findQuestionList" resultType="EduQuestionTree">
+		select b.*,b.konwledges AS knowledgeNames, c.answer as studentAnswer,c.is_correct as isCorrect
+		from edu_train_question a
+		inner join edu_questiontree b on a.question = b.id
+		LEFT JOIN edu_train_submit c 
+		on a.train = c.train and a.question = c.question
+		where a.train = #{id}
+		<if test="questiontype != null and questiontype != ''">
+			AND b.questiontype = #{questiontype}
+		</if>
+		order by a.create_date asc
+	</select>
+	
+	<insert id="insertTrainSubmit">
+		INSERT INTO edu_train_submit(
+			id,
+			train,
+			question,
+			answer,
+			is_correct,
+			create_date,
+			del_flag
+		) VALUES (
+			#{id},
+			#{train},
+			#{question},
+			#{answer},
+			#{isCorrect},
+			now(),
+			'0'
+		)
+	</insert>
+	
+	<insert id="insertAllTrainSubmit">
+		insert into edu_train_submit
+		(id,train,question,answer,is_correct,create_date,del_flag)
+		values
+		<foreach collection ="list" item="item" separator =",">
+         (#{item.id},#{item.train},#{item.question},#{item.studentAnswer},#{item.isCorrect},#{item.createDate},'0')
+    	</foreach >
+	</insert>
+	
+	<update id="completeTrain">
+		update edu_train set status = '1',update_date = now()
+		where id = #{id}
+	</update>
+</mapper>

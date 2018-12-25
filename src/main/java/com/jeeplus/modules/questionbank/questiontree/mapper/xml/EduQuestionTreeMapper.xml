@@ -1,0 +1,247 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.jeeplus.modules.questionbank.questiontree.mapper.EduQuestionTreeMapper">
+    
+	<sql id="eduQuestionTreeColumns">
+		a.id AS "id",
+		a.questiontype AS "questionType",
+		a.questionbanktype AS "questionBankType",
+		a.questiontext AS "questionText",
+		a.options AS "options",
+		a.answer AS "answer",
+		a.analy AS "analy",
+		a.textid AS "textid",
+		a.sharetype AS "shareType",
+		a.publicnnum AS "publicnNum",
+		a.create_by AS "createBy.loginName",
+		a.create_date AS "createDate",
+		a.update_by AS "updateBy.loginName",
+		a.update_date AS "updateDate",
+		a.remarks AS "remarks",
+		a.del_flag AS "delFlag",
+		a.files AS "files",
+		a.konwledges AS "konwledges.name",
+		c.office_id AS "createBy.office.id",
+		e.subjectid AS "subject"
+		
+	</sql>
+	
+	<sql id="eduQuestionTreeJoins">
+		left join sys_user c on a.create_by = c.login_name
+		<!-- 关联题目的学科 -->
+		JOIN edu_textbook d ON a.textid = d.id
+		JOIN edu_textbook e ON substring_index(
+			substring_index(d.parent_ids, ',', 2),
+			',' ,- 1
+		) = e.id
+	</sql>
+	
+    
+	<select id="get" resultType="EduQuestionTree" >
+		SELECT 
+			<include refid="eduQuestionTreeColumns"/>
+		FROM edu_questiontree a
+		<include refid="eduQuestionTreeJoins"/>
+		WHERE a.id = #{id}
+	</select>
+	
+	<select id="findList2" resultType="EduQuestionTree" >
+		SELECT 
+			<include refid="eduQuestionTreeColumns"/>
+		FROM edu_questiontree a
+		left join edu_homework_question b on a.id = b.question AND b.homework =#{homeWork}  
+		<include refid="eduQuestionTreeJoins"/>
+		<where>
+			a.del_flag = #{DEL_FLAG_NORMAL}
+			and a.textid = #{textid}
+			${dataScope}
+			and (a.sharetype=1 or a.create_by = #{createBy.loginName})
+			<if test="questiontype != null and questiontype != ''">
+				AND a.questiontype = #{questiontype}
+			</if>
+			<if test="questionbanktype != null and questionbanktype != ''">
+				AND a.questionbanktype = #{questionbanktype}
+			</if>
+			<if test="isChosen != null and isChosen == 0">
+				AND b.id is null
+			</if>
+			<if test="isChosen != null and isChosen == 1">
+				AND b.id is not null 
+			</if>
+		</where>
+		<choose>
+			<when test="page !=null and page.orderBy != null and page.orderBy != ''">
+				ORDER BY ${page.orderBy}
+			</when>
+			<otherwise>
+				ORDER BY a.update_date DESC
+			</otherwise>
+		</choose>
+	</select>
+	
+	<select id="findList" resultType="EduQuestionTree" >
+		SELECT 
+			<include refid="eduQuestionTreeColumns"/>
+		FROM edu_questiontree a
+		<include refid="eduQuestionTreeJoins"/>
+		<where>
+			a.del_flag = #{DEL_FLAG_NORMAL}
+			and a.textid = #{textid}
+			${dataScope}
+			<if test="questiontype != null and questiontype != ''">
+				AND a.questiontype = #{questiontype}
+			</if>
+			<if test="questionbanktype == null or questionbanktype == ''">
+				and (a.sharetype=1 or a.create_by = #{createBy.loginName})
+			</if>
+			<if test="questionbanktype != null and questionbanktype == 1">
+				AND a.questionbanktype = '1'
+			</if>
+			<if test="questionbanktype != null and questionbanktype == 2">
+				AND a.create_by = #{createBy.loginName}
+			</if>
+			<if test="questionbanktype != null and questionbanktype == 3">
+				AND a.sharetype = '1'
+			</if>
+			<if test="shareType != null and shareType != ''">
+				AND a.sharetype = #{shareType}
+			</if>
+		</where>
+		<choose>
+			<when test="page !=null and page.orderBy != null and page.orderBy != ''">
+				ORDER BY ${page.orderBy}
+			</when>
+			<otherwise>
+				ORDER BY a.update_date DESC
+			</otherwise>
+		</choose>
+	</select>
+	
+	<select id="findAllList" resultType="EduQuestionTree" >
+		SELECT 
+			<include refid="eduQuestionTreeColumns"/>
+		FROM edu_questiontree a
+		<include refid="eduQuestionTreeJoins"/>
+		<where>
+			a.del_flag = #{DEL_FLAG_NORMAL}
+			${dataScope}
+		</where>		
+		<choose>
+			<when test="page !=null and page.orderBy != null and page.orderBy != ''">
+				ORDER BY ${page.orderBy}
+			</when>
+			<otherwise>
+				ORDER BY a.update_date DESC
+			</otherwise>
+		</choose>
+	</select>
+	
+	<insert id="insert">
+		INSERT INTO edu_questiontree(
+			id,
+			questiontype,
+			questionbanktype,
+			questiontext,
+			options,
+			answer,
+			analy,
+			textid,
+			sharetype,
+			publicnnum,
+			create_by,
+			create_date,
+			update_by,
+			update_date,
+			remarks,
+			del_flag,
+			files,
+			konwledges
+		) VALUES (
+			#{id},
+			#{questionType},
+			#{questionBankType},
+			#{questionText},
+			#{options},
+			#{answer},
+			#{analy},
+			#{textid},
+			#{shareType},
+			#{publicnNum},
+			#{createBy.loginName},
+			#{createDate},
+			#{updateBy.loginName},
+			#{updateDate},
+			#{remarks},
+			#{delFlag},
+			#{files},
+			#{remarks}
+		)
+	</insert>
+	
+	<insert id="saveKnowLedge" >
+		INSERT INTO edu_question_knowledge(
+			question_id,
+			knowledge,
+			knowledgename,
+			del_flag
+		) VALUES (
+			#{question_id},
+			#{knowledge},
+			#{knowledgename},
+			#{del_flag}
+		)
+	</insert>
+		<!--物理删除-->
+	<update id="deleteKnowLedge">
+		DELETE FROM edu_question_knowledge
+		WHERE question_id = #{question_id}
+	</update>
+	<update id="update">
+		UPDATE edu_questiontree SET 	
+			questiontype = #{questionType},
+			questionbanktype = #{questionBankType},
+			questiontext = #{questionText},
+			options = #{options},
+			answer = #{answer},
+			analy = #{analy},
+			textid = #{textid},
+			sharetype = #{shareType},
+			publicnnum = #{publicnNum},
+			update_by = #{updateBy.loginName},
+			update_date = #{updateDate},
+			remarks = #{remarks},
+			files = #{files},
+			konwledges=#{remarks} 
+		WHERE id = #{id}
+	</update>
+	
+	
+	<!--物理删除-->
+	<update id="delete">
+		DELETE FROM edu_questiontree
+		WHERE id = #{id}
+	</update>
+	
+	<!--逻辑删除-->
+	<update id="deleteByLogic">
+		UPDATE edu_questiontree SET 
+			del_flag = #{DEL_FLAG_DELETE}
+		WHERE id = #{id}
+	</update>
+	
+	
+	<!-- 根据实体名称和字段名称和字段值获取唯一记录 -->
+	<select id="findUniqueByProperty" resultType="EduQuestionTree" statementType="STATEMENT">
+		select * FROM edu_questiontree  where ${propertyName} = '${value}'
+	</select>
+	
+	<select id="getCorrectCountById" resultType="java.util.Map">
+		SELECT
+			SUM(ehs.is_correct = 1) AS correctCount,
+			COUNT(*) AS totalCount
+		FROM
+			edu_homework_submit ehs
+		WHERE
+			ehs.question = #{questionId}
+	</select>
+</mapper>

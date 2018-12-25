@@ -1,0 +1,758 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.jeeplus.modules.sys.mapper.UserMapper">
+    <sql id="userColumns">
+    	a.id,
+    	a.company_id AS "company.id",
+    	a.office_id AS "office.id",
+    	a.login_name AS "loginName",
+    	a.password,
+    	a.no,
+		a.name,
+		a.sex,
+		a.birth,
+		a.address,
+		a.email,
+		a.phone,
+		a.mobile,
+		a.login_ip,
+		a.login_date,
+		a.remarks,
+		a.login_flag,
+		a.photo,
+		a.qrcode,
+		a.sign,
+		a.create_by AS "createBy.id",
+		a.create_date,
+		a.update_by AS "updateBy.id",
+		a.update_date,
+		a.del_flag,
+    	c.name AS "company.name",
+    	c.parent_id AS "company.parent.id",
+    	c.parent_ids AS "company.parentIds",
+    	ca.id AS "company.area.id",
+    	ca.name AS "company.area.name",
+    	ca.parent_id AS "company.area.parent.id",
+    	ca.parent_ids AS "company.area.parentIds",
+    	o.name AS "office.name",
+    	o.parent_id AS "office.parent.id",
+    	o.parent_ids AS "office.parentIds",
+    	oa.id AS "office.area.id",
+    	oa.name AS "office.area.name",
+    	oa.parent_id AS "office.area.parent.id",
+    	oa.parent_ids AS "office.area.parentIds",
+    	cu.id AS "company.primaryPerson.id",
+    	cu.name AS "company.primaryPerson.name",
+    	cu2.id AS "company.deputyPerson.id",
+    	cu2.name AS "company.deputyPerson.name",
+    	ou.id AS "office.primaryPerson.id",
+    	ou.name AS "office.primaryPerson.name",
+    	ou2.id AS "office.deputyPerson.id",
+    	ou2.name AS "office.deputyPerson.name",
+    	
+    	r.enname AS "role.enname"
+    </sql>
+    
+    <sql id="userJoins">
+		LEFT JOIN sys_office c ON c.id = a.company_id
+		LEFT JOIN sys_area ca ON ca.id = c.area_id
+		LEFT JOIN sys_office o ON o.id = a.office_id
+		LEFT JOIN sys_area oa ON oa.id = o.area_id
+		LEFT JOIN sys_user cu ON cu.id = c.primary_person
+		LEFT JOIN sys_user cu2 ON cu2.id = c.deputy_person
+		LEFT JOIN sys_user ou ON ou.id = o.primary_person
+		LEFT JOIN sys_user ou2 ON ou2.id = o.deputy_person
+		LEFT JOIN sys_user_role ur ON ur.user_id = a.id
+        LEFT JOIN sys_role r ON r.id = ur.role_id
+        LEFT JOIN edu_student_class ess on a.id = ess.student
+    </sql>
+	
+	<!-- 根据编号获得用户 -->
+	<select id="get" resultType="User">
+		SELECT
+			<include refid="userColumns"/>
+		FROM sys_user a
+		<include refid="userJoins"/>
+		WHERE a.id = #{id}
+	</select>
+	
+	<!-- 根据登录名查询用户 -->
+	<select id="getByLoginName" resultType="User" parameterType="User">
+		SELECT
+			<include refid="userColumns"/>
+		FROM sys_user a
+		<include refid="userJoins"/>
+		WHERE a.login_name = #{loginName} AND a.del_flag = #{DEL_FLAG_NORMAL}
+	</select>
+	
+	<!-- 分页查询用户信息 -->
+	<select id="findList" resultType="User">
+		SELECT
+			<include refid="userColumns"/>
+		FROM sys_user a
+		<include refid="userJoins"/>
+		WHERE a.del_flag = #{DEL_FLAG_NORMAL}
+		<if test="company != null and company.id != null and company.id != ''">
+			AND (c.id = #{company.id} OR c.parent_ids LIKE 
+					<if test="dbName == 'oracle'">'%,'||#{company.id}||',%')</if>
+					<if test="dbName == 'mysql'">CONCAT('%,', #{company.id}, ',%'))</if>
+					<if test="dbName == 'mssql'">'%'+#{company.id}+'%')</if>
+		</if>
+		<if test="role != null and role.id != null and role.id != ''">
+			 AND ur.role_id = #{role.id}
+		</if>
+		<if test="office != null and office.id != null and office.id != ''">
+			AND (o.id = #{office.id} OR o.parent_ids LIKE 
+					<if test="dbName == 'oracle'">'%,'||#{office.id}||',%')</if>
+					<if test="dbName == 'mysql'">CONCAT('%,', #{office.id}, ',%'))</if>
+					<if test="dbName == 'mssql'">'%'+#{office.id}+'%')</if>
+		</if>
+		<!-- 如果不是超级管理员，则不显示超级管理员用户 -->
+		<if test="!currentUser.admin">
+			AND a.id != '1'
+		</if>
+		<if test="loginName != null and loginName != ''">
+			AND a.login_name like 
+					<if test="dbName == 'oracle'">'%'||#{loginName}||'%'</if>
+					<if test="dbName == 'mysql'">CONCAT('%', #{loginName}, '%')</if>
+					<if test="dbName == 'mssql'">'%'+#{loginName}+'%'</if>
+		</if>
+		<if test="name != null and name != ''">
+			AND a.name like 
+					<if test="dbName == 'oracle'">'%'||#{name}||'%'</if>
+					<if test="dbName == 'mysql'">CONCAT('%', #{name}, '%')</if>
+					<if test="dbName == 'mssql'">'%'+#{name}+'%'</if>
+		</if>
+		<if test="classesId != null and classesId != ''">
+			AND ess.class = #{classesId}
+		</if>
+		<if test="schoolId != null and schoolId != ''">
+			AND a.office_id = #{schoolId}
+		</if>
+		<!-- 数据范围过滤 -->
+		${dataScope}
+		<choose>
+			<when test="page !=null and page.orderBy != null and page.orderBy != ''">
+				ORDER BY ${page.orderBy}
+			</when>
+			<otherwise>
+				ORDER BY c.code, o.code, a.name
+			</otherwise>
+		</choose>
+	</select>
+	
+	
+	<!-- 根据部门查询用户信息 -->
+	<select id="findListByOffice" resultType="User">
+		SELECT
+			<include refid="userColumns"/>
+		FROM sys_user a
+		<include refid="userJoins"/>
+
+		WHERE a.del_flag = #{DEL_FLAG_NORMAL}
+		<if test="company != null and company.id != null and company.id != ''">
+			AND c.id = #{company.id} 
+		</if>
+		<if test="office != null and office.id != null and office.id != ''">
+			AND o.id = #{office.id} 
+		</if>
+		<if test="office == null">
+			AND (o.id = ''  or o.id is null)
+		</if>
+		
+		<if test="loginName != null and loginName != ''">
+			AND a.login_name like 
+					<if test="dbName == 'oracle'">'%'||#{loginName}||'%'</if>
+					<if test="dbName == 'mysql'">CONCAT('%', #{loginName}, '%')</if>
+					<if test="dbName == 'mssql'">'%'+#{loginName}+'%'</if>
+		</if>
+		<if test="name != null and name != ''">
+			AND a.name like 
+					<if test="dbName == 'oracle'">'%'||#{name}||'%'</if>
+					<if test="dbName == 'mysql'">CONCAT('%', #{name}, '%')</if>
+					<if test="dbName == 'mssql'">'%'+#{name}+'%'</if>
+		</if>
+		<!-- 数据范围过滤 -->
+		${dataScope}
+		<!-- 排序 -->
+		ORDER BY  a.name
+	
+	</select>
+	
+	<!-- 根据OfficeId获取用户（树查询用户时用） -->
+	<select id="findUserByOfficeId" resultType="User" useCache="true">
+		SELECT
+			a.id, a.name, a.login_name
+		FROM sys_user a
+		WHERE a.del_flag = #{DEL_FLAG_NORMAL}
+			AND a.office_id = #{office.id}
+		ORDER BY a.name
+	</select>
+	
+	<!-- 查询全部用户 -->
+	<select id="findAllList" resultType="User">
+		SELECT
+			<include refid="userColumns"/>
+		FROM sys_user a
+		<include refid="userJoins"/>
+		WHERE a.del_flag = #{DEL_FLAG_NORMAL}
+		ORDER BY c.code, o.code, a.name
+	</select>
+	
+	<!-- 查询全部用户数目 -->
+	<select id="findAllCount" resultType="long">
+		SELECT
+			COUNT(1)
+		FROM sys_user a
+		WHERE a.del_flag = #{DEL_FLAG_NORMAL}
+	</select>
+	
+	<!-- 插入用户 -->
+	<insert id="insert">
+		INSERT INTO sys_user(
+			id, 
+			company_id, 
+			office_id, 
+			login_name, 
+			password, 
+			no, 
+			name, 
+			sex,
+			birth,
+			address,
+			email, 
+			phone, 
+			mobile, 
+			create_by, 
+			create_date, 
+			update_by, 
+			update_date, 
+			remarks, 
+			login_flag, 
+			photo, 
+			qrcode,
+			del_flag
+		) VALUES (
+			#{id}, 
+			#{company.id}, 
+			#{office.id}, 
+			#{loginName}, 
+			#{password}, 
+			#{no}, 
+			#{name}, 
+			#{sex},
+			#{birth},
+			#{address},
+			#{email}, 
+			#{phone}, 
+			#{mobile}, 
+			#{createBy.id}, 
+			#{createDate}, 
+			#{updateBy.id}, 
+			#{updateDate}, 
+			#{remarks}, 
+			#{loginFlag}, 
+			#{photo}, 
+			#{qrCode},
+			#{delFlag}
+		)
+	</insert>
+	
+	<!-- 更新用户 -->
+	<update id="update">
+		UPDATE sys_user SET 
+			company_id = #{company.id}, 
+			office_id = #{office.id}, 
+			login_name = #{loginName}, 
+			password = #{password}, 
+			no = #{no}, 
+			name = #{name}, 
+			sex = #{sex},
+			birth = #{birth},
+			address = #{address},
+			email = #{email}, 
+			phone = #{phone}, 
+			mobile = #{mobile}, 
+			update_by = #{updateBy.id}, 
+			update_date = #{updateDate}, 
+			remarks = #{remarks},
+			login_flag = #{loginFlag},
+			photo = #{photo},
+			qrcode = #{qrCode}
+		WHERE id = #{id}
+	</update>
+	
+	<!-- 删除用户和角色关联表数据 -->
+	<delete id="deleteUserRole">
+		DELETE FROM sys_user_role WHERE user_id = #{id}
+	</delete>
+	
+	<!-- 插入用户和角色关联表数据 -->
+	<insert id="insertUserRole">
+		INSERT INTO sys_user_role(user_id, role_id)
+		<foreach collection="roleList" item="role" separator=" union all ">
+			SELECT #{id}, #{role.id}  ${dual} 
+		</foreach>
+	</insert>
+	
+	<!-- 更新用户信息  -->
+	<update id="updateUserInfo">
+		UPDATE sys_user SET 
+			name = #{name},
+			email = #{email}, 
+			phone = #{phone}, 
+			mobile = #{mobile}, 
+			update_by = #{updateBy.id}, 
+			update_date = #{updateDate}, 
+			remarks = #{remarks},
+			photo = #{photo},
+			qrcode = #{qrCode},
+			sign = #{sign}
+		WHERE id = #{id}
+	</update>
+	
+	<!-- 更新用户密码 -->
+	<update id="updatePasswordById">
+		UPDATE sys_user SET 
+			password = #{password} 
+		WHERE id = #{id}
+	</update>
+	
+	<!-- 更新登录信息，如登录IP、登录时间 -->
+	<update id="updateLoginInfo">
+		UPDATE sys_user SET 
+			login_ip = #{loginIp}, 
+			login_Date = #{loginDate} 
+		WHERE id = #{id}
+	</update>
+	
+	<!-- 物理删除用户 -->
+	<update id="delete">
+		DELETE FROM sys_user 
+		WHERE id = #{id}
+	</update>
+	
+	<!-- 逻辑删除用户 -->
+	<update id="deleteByLogic">
+		UPDATE sys_user SET 
+			del_flag = #{DEL_FLAG_DELETE}
+		WHERE id = #{id}
+	</update>
+	
+	<!-- 根据实体名称和字段名称和字段值获取唯一记录 -->
+	<select id="findUniqueByProperty"  resultType="User" statementType="STATEMENT">
+		select * from sys_user where ${propertyName} = '${value}'
+	</select>
+	<!-- 添加好友 -->
+	<insert id="insertFriend">
+		INSERT INTO sys_user_friend(
+			id, 
+			userId, 
+			friendId
+		) VALUES (
+			#{id}, 
+			#{userId}, 
+			#{friendId}
+		)
+	</insert>
+	
+	<!-- 根据用户id和好友id获取唯一记录 -->
+	<select id="findFriend" resultType="User">
+		SELECT
+			*
+		FROM sys_user a
+		LEFT JOIN sys_user_friend p ON p.userId = a.id
+		WHERE p.userId = #{userId} and p.friendId = #{friendId}
+	</select>
+	
+	<!-- 删除好友 -->
+	<select id="deleteFriend">
+		DELETE FROM sys_user_friend  WHERE userId = #{userId} and friendId = #{friendId}
+	</select>
+	
+		<!-- 查询我的好友列表 -->
+	<select id="findFriends"  resultType="User">
+		SELECT
+			<include refid="userColumns"/>
+		FROM sys_user a
+		<include refid="userJoins"/>
+		LEFT JOIN sys_user_friend p ON p.friendId = a.id
+		WHERE  p.userId = #{id}
+	</select>
+	
+		<!-- 根据条件检索用户，添加到好友列表 -->
+	<select id="searchUsers"  resultType="User">
+		SELECT
+			<include refid="userColumns"/>
+		FROM sys_user a
+	  	<include refid="userJoins"/>
+		<if test="name != null and name != ''">
+			WHERE  a.name like 
+					<if test="dbName == 'oracle'">'%'||#{name}||'%'</if>
+					<if test="dbName == 'mysql'">CONCAT('%', #{name}, '%')</if>
+					<if test="dbName == 'mssql'">'%'+#{name}+'%'</if>
+		</if>
+	</select>
+	
+	<select id="isLoginToday" resultType="EduLoginLog">
+		select * from edu_login_log 
+		where user = #{user} and date_format(now(),'%Y-%m-%d')=date_format(login_time,'%Y-%m-%d') 
+		limit 1
+	</select>
+	
+	<insert id="insertLoginLog">
+		insert into edu_login_log
+		(id,user,login_time)
+		values
+		(#{id},#{user},now())
+	</insert>
+	
+	<!--登录日志 -->
+	<select id="getLoginCountByYear" resultType="java.util.Map">
+		select DATE_FORMAT(NOW(),'%Y') as time,count(*) as count from edu_login_log 
+		where DATE_FORMAT(login_time,'%Y') = DATE_FORMAT(NOW(),'%Y') 
+		<if test="user != null and user != ''">
+			AND	user = #{user}
+		</if>
+		<if test="classes !=null and classes != ''">
+			AND user IN (select student from edu_student_class where class = #{classes})
+		</if>
+		<if test="users !=null and users!=''">
+			AND user IN
+			<foreach collection="users" index="index" item="item" open="(" separator="," close=")">
+				#{item}
+			</foreach>
+		</if>
+	</select>
+	
+	<select id="getLoginCountByMonth" resultType="java.util.Map">
+		select DATE_FORMAT(login_time,'%Y-%m') as time,count(*) as count from edu_login_log 
+		where 1 = 1
+		<if test="user != null and user != ''">
+			AND	user = #{user}
+		</if>
+		<if test="classes !=null and classes != ''">
+			AND user IN (select student from edu_student_class where class = #{classes})
+		</if>
+		<if test="users!=null and users!=''">
+			AND user IN
+			<foreach collection="users" index="index" item="item" open="(" separator="," close=")">
+				#{item}
+			</foreach>
+		</if>
+		group by time
+		ORDER BY time asc
+	</select>
+	
+	<select id="getLoginCountByDay" resultType="java.util.Map">
+		select DATE_FORMAT(login_time,'%Y-%m-%d') as time,count(*) as count from edu_login_log
+		<![CDATA[
+		where login_time >= #{startTime}
+		]]>
+		<if test="user != null and user != ''">
+			AND	user = #{user}
+		</if>
+		<if test="classes !=null and classes != ''">
+			AND user IN (select student from edu_student_class where class = #{classes})
+		</if>
+		<if test="users!=null and users!=''">
+			AND user IN
+			<foreach collection="users" index="index" item="item" open="(" separator="," close=")">
+				#{item}
+			</foreach>
+		</if>
+		group by time
+		ORDER BY time asc
+	</select>
+	
+	<!--做题数量 -->
+	<select id="getAnswerCountByYear" resultType="java.util.Map">
+		select DATE_FORMAT(NOW(),'%Y') as time,count(*) as count from edu_homework_submit 
+		where DATE_FORMAT(create_date,'%Y') = DATE_FORMAT(NOW(),'%Y') 
+		<if test="user != null and user != ''">
+			AND	student = #{user}
+		</if>
+		<if test="classes !=null and classes != ''">
+			AND student IN (select student from edu_student_class where class = #{classes})
+		</if>
+		<if test="users!=null and users!=''">
+			AND student IN
+			<foreach collection="users" index="index" item="item" open="(" separator="," close=")">
+				#{item}
+			</foreach>
+		</if>
+	</select>
+	
+	<select id="getAnswerCountByMonth" resultType="java.util.Map">
+		select DATE_FORMAT(create_date,'%Y-%m') as time,count(*) as count from edu_homework_submit 
+		where 1 = 1
+		<if test="user != null and user != ''">
+			AND	student = #{user}
+		</if>
+		<if test="classes !=null and classes != ''">
+			AND student IN (select student from edu_student_class where class = #{classes})
+		</if>
+		<if test="users!=null and users!=''">
+			AND student IN
+			<foreach collection="users" index="index" item="item" open="(" separator="," close=")">
+				#{item}
+			</foreach>
+		</if>
+		group by time
+		ORDER BY time asc
+	</select>
+	
+	<select id="getAnswerCountByDay" resultType="java.util.Map">
+		select DATE_FORMAT(create_date,'%Y-%m-%d') as time,count(*) as count from edu_homework_submit
+		<![CDATA[
+		where create_date >= #{startTime}
+		]]>
+		<if test="user != null and user != ''">
+			AND	student = #{user}
+		</if>
+		<if test="classes !=null and classes != ''">
+			AND student IN (select student from edu_student_class where class = #{classes})
+		</if>
+		<if test="users!=null and users!=''">
+			AND student IN
+			<foreach collection="users" index="index" item="item" open="(" separator="," close=")">
+				#{item}
+			</foreach>
+		</if>
+		group by time
+		ORDER BY time asc
+	</select>
+	
+	<!--答题正确率 -->
+	<select id="getCorrectAnswerCountByYear" resultType="java.util.Map">
+		select DATE_FORMAT(NOW(),'%Y') as time,count(*) as count from edu_homework_submit a
+		inner join edu_questiontree b on a.question = b.id
+		where DATE_FORMAT(a.create_date,'%Y') = DATE_FORMAT(NOW(),'%Y') 
+		and b.questiontype != '5' 
+		<if test="isCorrect != null and isCorrect != ''">
+			AND a.is_correct = '1'
+		</if>
+		<if test="user != null and user != ''">
+			AND	a.student = #{user}
+		</if>
+		<if test="classes !=null and classes != ''">
+			AND a.student IN (select d.student from edu_student_class d where d.class = #{classes})
+		</if>
+		<if test="users!=null and users!=''">
+			AND a.student IN
+			<foreach collection="users" index="index" item="item" open="(" separator="," close=")">
+				#{item}
+			</foreach>
+		</if>
+	</select>
+	
+	<select id="getCorrectAnswerCountByMonth" resultType="java.util.Map">
+		select DATE_FORMAT(a.create_date,'%Y-%m') as time,count(*) as count from edu_homework_submit a
+		inner join edu_questiontree b on a.question = b.id
+		where b.questiontype != '5'
+		<if test="isCorrect != null and isCorrect != ''">
+			AND a.is_correct = '1'
+		</if>
+		<if test="user != null and user != ''">
+			AND	a.student = #{user}
+		</if>
+		<if test="classes !=null and classes != ''">
+			AND a.student IN (select d.student from edu_student_class d where d.class = #{classes})
+		</if>
+		<if test="users!=null and users!=''">
+			AND a.student IN
+			<foreach collection="users" index="index" item="item" open="(" separator="," close=")">
+				#{item}
+			</foreach>
+		</if>
+		group by time
+		ORDER BY time asc
+	</select>
+	
+	<select id="getCorrectAnswerCountByDay" resultType="java.util.Map">
+		select DATE_FORMAT(a.create_date,'%Y-%m-%d') as time,count(*) as count from edu_homework_submit a
+		inner join edu_questiontree b on a.question = b.id
+		<![CDATA[
+		where a.create_date >= #{startTime} and b.questiontype != '5'
+		]]>
+		<if test="isCorrect != null and isCorrect != ''">
+			AND a.is_correct = '1'
+		</if>
+		<if test="user != null and user != ''">
+			AND	a.student = #{user}
+		</if>
+		<if test="classes !=null and classes != ''">
+			AND a.student IN (select d.student from edu_student_class d where d.class = #{classes})
+		</if>
+		<if test="users!=null and users!=''">
+			AND a.student IN
+			<foreach collection="users" index="index" item="item" open="(" separator="," close=")">
+				#{item}
+			</foreach>
+		</if>
+		group by time
+		ORDER BY time asc
+	</select>
+	
+	<!--知识浏览 -->
+	<select id="getKnowledgeCountByYear" resultType="java.util.Map">
+		select DATE_FORMAT(NOW(),'%Y') as time,count(*) as count from edu_resource_log a
+		where DATE_FORMAT(a.brower_time,'%Y') = DATE_FORMAT(NOW(),'%Y') 
+		<if test="user != null and user != ''">
+			AND	a.student = #{user}
+		</if>
+		<if test="classes !=null and classes != ''">
+			AND a.student IN (select d.student from edu_student_class d where d.class = #{classes})
+		</if>
+		<if test="users!=null and users!=''">
+			AND a.student IN
+			<foreach collection="users" index="index" item="item" open="(" separator="," close=")">
+				#{item}
+			</foreach>
+		</if>
+	</select>
+	
+	<select id="getKnowledgeCountByMonth" resultType="java.util.Map">
+		select DATE_FORMAT(a.brower_time,'%Y-%m') as time,count(*) as count from edu_resource_log a
+		where 1 = 1
+		<if test="user != null and user != ''">
+			AND	a.student = #{user}
+		</if>
+		<if test="classes !=null and classes != ''">
+			AND a.student IN (select d.student from edu_student_class d where d.class = #{classes})
+		</if>
+		<if test="users!=null and users!=''">
+			AND a.student IN
+			<foreach collection="users" index="index" item="item" open="(" separator="," close=")">
+				#{item}
+			</foreach>
+		</if>
+		group by time
+		ORDER BY time asc
+	</select>
+	
+	<select id="getKnowledgeCountByDay" resultType="java.util.Map">
+		select DATE_FORMAT(a.brower_time,'%Y-%m-%d') as time,count(*) as count from edu_resource_log a
+		<![CDATA[
+		where a.brower_time >= #{startTime}
+		]]>
+		<if test="user != null and user != ''">
+			AND	a.student = #{user}
+		</if>
+		<if test="classes !=null and classes != ''">
+			AND a.student IN (select d.student from edu_student_class d where d.class = #{classes})
+		</if>
+		<if test="users!=null and users!=''">
+			AND a.student IN
+			<foreach collection="users" index="index" item="item" open="(" separator="," close=")">
+				#{item}
+			</foreach>
+		</if>
+		group by time
+		ORDER BY time asc
+	</select>
+	
+	
+	<!-- 教师首页-->
+	<select id="getResourceCount" resultType="java.lang.Integer">
+		select count(*) from edu_teache_resource
+		where create_by = #{loginName}
+	</select>
+	
+	<select id="getHomeworkCount" resultType="java.lang.Integer">
+		select count(*) from edu_homework
+		where create_by = #{userId}
+	</select>
+	
+	<select id="getCompleteStudents" resultType="java.util.Map">
+		select c.name,b.subject,date_format(a.update_date,'%Y-%m-%d %H:%i:%s') as updateDate from edu_homework_arrange a
+		inner join edu_homework b on a.homework = b.id
+		inner join sys_user c on a.student = c.id
+		where b.create_by = #{userId} and a.status != '0'
+	</select>
+	
+	<select id="getStduyMostResources" resultType="java.util.Map">
+		select resourcename,date_format(create_date,'%Y-%m-%d %H:%i:%s') as createDate,browse from edu_teache_resource
+		where create_by = #{loginName}
+		order by browse desc
+	</select>
+	
+	<select id="getUseMostQuestions" resultType="java.util.Map">
+		select a.questiontext,a.questiontype,a.publicnnum,c.subjectid
+		from edu_questiontree a
+		JOIN edu_textbook b ON a.textid = b.id
+		JOIN edu_textbook c ON substring_index(
+			substring_index(b.parent_ids, ',', 2),
+			',' ,- 1
+		) = c.id
+		where a.create_by = #{loginName}
+		order by a.publicnnum desc
+	</select>
+	
+	<!--学生首页 -->
+	<select id="getStudyResourceCount" resultType="java.lang.Integer">
+		select count(*) from edu_resource_log
+		where student = #{userId}
+	</select>
+	
+	<select id="getTrainsCount" resultType="java.lang.Integer">
+		select count(*) from edu_train
+		where student = #{userId}
+	</select>
+	
+	<select id="getCompleteHomeworkCount" resultType="java.lang.Integer">
+		select count(*) from edu_homework_arrange
+		where student = #{userId} and status != '0'
+	</select>
+	
+	<select id="getRecentStudyResources" resultType="java.util.Map">
+		select a.subject,b.resourcename,b.filetype,date_format(a.brower_time,'%Y-%m-%d %H:%i:%s') as browerDate 
+		from edu_resource_log a
+		inner join edu_teache_resource b on a.resource = b.id
+		where a.student = #{userId}
+		order by a.brower_time desc
+	</select>
+	
+	<select id="getStudentStduyMostResources" resultType="java.util.Map">
+		select b.*,c.resourcename,date_format(c.create_date,'%Y-%m-%d %H:%i:%s') as createDate from 
+		(select a.resource,a.subject,count(*) as count from edu_resource_log a
+		where a.student = #{userId}
+		GROUP BY a.resource,a.subject
+		ORDER BY count desc) b
+		inner join edu_teache_resource c on b.resource = c.id
+	</select>
+	
+	<select id="getCompleteHomeworks" resultType="java.util.Map">
+		select date_format(b.arrange_time,'%Y-%m-%d %H:%i:%s') as arrangeTime,b.requirement,b.subject,
+			date_format(a.update_date,'%Y-%m-%d %H:%i:%s') as updateTime,c.name
+		from edu_homework_arrange a
+		inner join edu_homework b on a.homework = b.id
+		inner join sys_user c on b.create_by = c.id
+		where a.student = #{userId} and a.status != '0'
+		order by a.update_date desc
+	</select>
+	
+	<select id="getNeedCompleteHomeworks" resultType="java.util.Map">
+		select date_format(b.arrange_time,'%Y-%m-%d %H:%i:%s') as arrangeTime,b.requirement,b.subject,c.name
+		from edu_homework_arrange a
+		inner join edu_homework b on a.homework = b.id
+		inner join sys_user c on b.create_by = c.id
+		where a.student = #{userId} and a.status = '0'
+		order by a.create_date desc
+	</select>
+	
+	<!-- 家长端 -->
+	<select id="getStudentByParent" resultType="User">
+		SELECT
+			<include refid="userColumns"/>
+		FROM sys_user a
+		<include refid="userJoins"/>
+		inner join edu_student_parent e on a.id = e.student_id and e.del_flag = '0'
+		WHERE e.parent_id = #{parentid}
+	</select>
+	
+	<select id="getUserByLoginName" resultType="User">
+		select * from sys_user where login_name = #{loginName}
+	</select>
+	
+</mapper>

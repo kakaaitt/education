@@ -1,0 +1,151 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.jeeplus.modules.homework.eduhomeworkarrange.mapper.EduHomeworkArrangeMapper">
+    
+	<sql id="eduHomeworkArrangeColumns">
+		a.id AS "id",
+		a.homework AS "homework",
+		a.classes AS "classes",
+		b.`name` AS "student", 
+		a.status AS "status",
+		a.score AS "score",
+		a.comment AS "comment",
+		a.create_by AS "createBy.id",
+		a.create_date AS "createDate",
+		a.update_by AS "updateBy.id",
+		a.update_date AS "updateDate",
+		a.remarks AS "remarks",
+		a.del_flag AS "delFlag"
+	</sql>
+	
+	<sql id="eduHomeworkArrangeJoins">
+		join sys_user b 
+	</sql>
+	
+    
+	<select id="get" resultType="EduHomeworkArrange" >
+		SELECT 
+			<include refid="eduHomeworkArrangeColumns"/>
+		FROM edu_homework_arrange a
+		<include refid="eduHomeworkArrangeJoins"/>
+		WHERE a.id = #{id} 
+		and a.student=b.id
+	</select>
+	
+	<select id="findList" resultType="EduHomeworkArrange" >
+		SELECT 
+			<include refid="eduHomeworkArrangeColumns"/>
+		FROM edu_homework_arrange a
+		<include refid="eduHomeworkArrangeJoins"/>
+		<where>
+			a.del_flag = #{DEL_FLAG_NORMAL} 
+			and a.homework=#{homework}
+			and a.student=b.id
+			${dataScope}
+		</where>
+		<choose>
+			<when test="page !=null and page.orderBy != null and page.orderBy != ''">
+				ORDER BY ${page.orderBy}
+			</when>
+			<otherwise>
+				ORDER BY a.update_date DESC
+			</otherwise>
+		</choose>
+	</select>
+	
+	<select id="findAllList" resultType="EduHomeworkArrange" >
+		SELECT 
+			<include refid="eduHomeworkArrangeColumns"/>
+		FROM edu_homework_arrange a
+		<include refid="eduHomeworkArrangeJoins"/>
+		<where>
+			a.del_flag = #{DEL_FLAG_NORMAL} 
+			and a.student=b.id
+			${dataScope}
+		</where>		
+		<choose>
+			<when test="page !=null and page.orderBy != null and page.orderBy != ''">
+				ORDER BY ${page.orderBy}
+			</when>
+			<otherwise>
+				ORDER BY a.update_date DESC
+			</otherwise>
+		</choose>
+	</select>
+	
+	<insert id="insert">
+		INSERT INTO edu_homework_arrange(
+			id,
+			homework,
+			classes,
+			student,
+			status,
+			score,
+			comment,
+			create_by,
+			create_date,
+			update_by,
+			update_date,
+			remarks,
+			del_flag
+		) VALUES (
+			#{id},
+			#{homework},
+			#{classes},
+			#{student},
+			#{status},
+			#{score},
+			#{comment},
+			#{createBy.id},
+			#{createDate},
+			#{updateBy.id},
+			#{updateDate},
+			#{remarks},
+			#{delFlag}
+		)
+	</insert>
+	
+	<update id="update">
+		UPDATE edu_homework_arrange SET 	
+			homework = #{homework},
+			classes = #{classes},
+			student = #{student},
+			status = #{status},
+			score = #{score},
+			comment = #{comment},
+			update_by = #{updateBy.id},
+			update_date = #{updateDate},
+			remarks = #{remarks}
+		WHERE id = #{id}
+	</update>
+	
+	
+	<!--物理删除-->
+	<update id="delete">
+		DELETE FROM edu_homework_arrange
+		WHERE id = #{id}
+	</update>
+	
+	<!--逻辑删除-->
+	<update id="deleteByLogic">
+		UPDATE edu_homework_arrange SET 
+			del_flag = #{DEL_FLAG_DELETE}
+		WHERE id = #{id}
+	</update>
+	
+	
+	<!-- 根据实体名称和字段名称和字段值获取唯一记录 -->
+	<select id="findUniqueByProperty" resultType="EduHomeworkArrange" statementType="STATEMENT">
+		select * FROM edu_homework_arrange  where ${propertyName} = '${value}'
+	</select>
+	
+	<insert id="insertAll">
+		insert into edu_homework_arrange
+		(id,homework,classes,student,status,create_date,update_date,del_flag)
+		values
+		<foreach collection ="list" item="item" separator =",">
+         (#{item.id},#{item.homework},#{item.classes},#{item.student},'0',#{item.createDate},#{item.createDate},'0')
+    	</foreach >
+	</insert>
+	
+</mapper>
