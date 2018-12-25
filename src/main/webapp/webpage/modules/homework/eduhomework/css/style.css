@@ -1,0 +1,276 @@
+@charset "utf-8";
+*{
+	box-sizing: border-box;
+}
+.afl{
+	float: left;
+}
+.overhidden{
+	overflow: hidden;
+}
+.header{
+	width: 100%;
+	background-color: #FFFFFF;
+	height: 60px;
+	position: relative;
+}
+.header .back{
+	position: absolute;
+	left: 20px;
+	top: 0;
+	font-size: 26px;
+	line-height: 60px;
+	color: #323232;
+}
+.header .time{
+	position: absolute;
+	right: 20px;
+	top: 0;
+	font-size: 26px;
+	line-height: 60px;
+	color: #999999;
+}
+.content-parent{
+	width: 100%;
+	padding: 25px;
+	background-color: #eeeeee;
+}
+.content-box{
+	list-style-type: none;
+	background-color: #FFFFFF;
+	width: 100%;
+	padding: 0 24px;
+    height: 480px;
+    overflow-y: scroll;
+}
+.content-box li{
+	border-bottom: 1px solid #dedede;
+	padding: 20px 0;
+}
+.content-box li p{
+	width: 100%;
+	font-size: 20px;
+	line-height: 34px;
+	margin-bottom: 5px;
+}
+.color-black{
+	color: #000;
+}
+.color-gray{
+	color: #999999;
+}
+.question-title{}
+.question-tips span{
+	color: #999999;
+	margin: 0 5px;
+	
+}
+.question-model span{
+	margin-right: 25px;
+	color: #999999;
+}
+.question-model img{
+	width: 30px;
+	vertical-align: bottom;
+	margin-right: 10px;
+}
+.question-select{
+	color: #999999;
+}
+.question-select span{
+	color: #333;
+	margin-left: 15px;
+}
+.answer-box{
+	width: 100%;
+	font-size: 20px;
+	line-height: 34px;
+	color: #999999;
+	position: relative;
+}
+.answer-box input{
+	border: none;
+	outline: none;
+	border-bottom: 1px solid #12b7f7;
+	width: 80%;
+}
+.submit-span{
+	position: absolute;
+	right: -10px;
+	bottom: 0px;
+	width: 80px;
+	height: 36px;
+	text-align: center;
+	line-height: 36px;
+	font-size: 20px;
+	color: #FFFFFF;
+	background-color: #00ddff;
+	box-shadow: 3px 4px 10px -2px #999;
+	border-radius: 5px;
+}
+.submit-button{
+	margin: 10px 30% ;
+	background-color: #00ddff;
+	width: 40%;
+	height: 60px;
+	color: #FFFFFF;
+	line-height: 60px;
+	font-size: 23px;
+	text-align: center;
+	border-radius: 10px;
+	box-shadow: 3px 4px 10px -2px #999;
+	cursor:pointer;
+}
+/*---------- 作业批改 -----------*/
+.header-select{
+	
+}
+.task-header .layui-input-block{
+	width: 150px;
+	position: absolute;
+	right: 20px;
+	top: 20px;
+}
+.task-parent{
+}
+.task-content{
+	background-color: #FFFFFF;
+	padding: 25px;
+}
+.task-header{
+	width: 100%;
+	padding-bottom: 10px;
+	border-bottom: 1px solid #ededed;
+	position: relative;
+}
+.tack-icon{
+	position: absolute;
+	left: 0;
+	top: 0;
+	width: 130px;
+	height: 160px;
+	border: 1px solid #e5e5e5;
+}
+.tack-icon img{
+	position: absolute;
+	width: 44px;
+	height: 44px;
+	top: 0;
+	right: 0;
+	bottom: 0;
+	left: 0;
+	margin: auto;
+	
+}
+.tack-icon .state{
+	position: absolute;
+	top: 0;
+	left: 0;
+	width: 60px;
+	font-size: 14px;
+	line-height:26px ;
+	background-color: #37C5FB;
+	color: #FFFFFF;
+	text-align: center;
+	border-radius: 0 0 15px 0 ;
+}
+.task-info{
+	margin-left: 140px;
+}
+.task-info p{
+	font-size: 16px;
+	line-height: 42px;
+	color: #323232;
+}
+.task-teacher span{
+	color: #999999;
+	margin-left: 15px;
+}
+.task-require{}
+.task-info-p span{
+	margin-right: 10px;
+}
+.task-person{
+	height: 34px;
+}
+.task-person span{
+	font-size: 16px;
+	line-height: 34px;
+	color: #323232;
+}
+.task-person .layui-progress{
+	width: 100px;
+	margin: 14px 10px;
+}
+.task-person .layui-progress-bar{
+	background-color: #13b8f8;
+}
+.task-box{
+	width: 100%;
+	padding-top: 15px;
+}
+.task-title{
+	position: relative;
+	
+}
+.task-title-left{
+	font-size: 20px;
+	line-height: 30px;
+	color: #333333;
+}
+.task-title-left img{
+	height: 20px;
+	margin-right: 10px;
+}
+.task-title-right{
+	position: absolute;
+	right: 0;
+	top: 0;
+	font-size: 20px;
+	line-height: 30px;
+	color: #999;
+}
+.task-title-right .layui-form-switch{
+	margin: 0;
+	min-width: 38px;
+}
+.task-title-right .layui-form-switch i{
+    left: 4px;
+    top: 2px;
+}
+.task-title-right .layui-form-onswitch i{
+	left: 100%;
+}
+.person-ul{
+	width: 870px;
+	margin: 10px auto;
+	display: flex;
+    flex-wrap: wrap;
+}
+.person-ul li{
+	width: 280px;
+	margin: 0 10px 10px 0;
+	border:  1px solid #dcdcdc;
+	padding: 16px 20px;
+	position: relative;
+	min-height: 110px;
+}
+.person-icon{
+	position: absolute;
+	width: 70px;
+	height: 70px;
+	border-radius: 50%;
+	overflow: hidden;
+}
+.person-li-info{
+	margin-left: 80px;
+	padding-top: 10px;
+	font-size: 14px;
+	line-height: 28px;
+	color: #333333;
+}
+.person-name{}
+.person-time{
+	font-size: 12px;
+	color: #999999;
+}

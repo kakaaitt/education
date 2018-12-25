@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="UTF-8">
+		<title></title>
+		<link rel="stylesheet" type="text/css" href="layui/css/layui.css"/>
+		<link rel="stylesheet" type="text/css" href="css/style.css"/>
+	</head>
+	<body>
+		<!--理想尺寸1180，要适配更大的屏幕-->
+		<div class="header" style="text-align: right;height:60px;line-height: 60px;padding-right:20px;">
+		      <select id="classes" name="classes" style="height:40px;width:150px;">
+		      </select>
+		</div>
+		<div class="content-parent task-parent">
+			<div class="task-content">
+				<div class="task-header">
+					<div class="tack-icon">
+						<img id="subjectIcon" src=""/>
+						<span id="status" class="state"></span>
+					</div>
+					<div class="task-info">
+						<p class="task-teacher"> 教师：<span id="teacherName" style="color:#333;"></span></span> <span>布置时间：<span id="arrangeTime"></span></span> </p>
+						<p class="task-require"> 作业要求：<span id="requirement"></span></p>
+						<p class="task-info-p"> <span>判断题：<span id="questiontype1">0</span>题</span> <span>单选题：<span id="questiontype2">0</span>题</span> <span>多选题：<span id="questiontype3">0</span>题</span> <span>填空题：<span id="questiontype4">0</span>题</span> <span>问答题：<span id="questiontype5">0</span>题</span></p>
+						<div class="task-person">
+							<span class="afl">参与人数：</span> 
+							<div class="layui-progress afl">
+							  <div class="layui-progress-bar" lay-percent="0%">
+<!-- 							  	<div id="percent" style="height:100%;width:60%;background-color: "></div> -->
+							  </div>
+							</div>  
+							<span class="afl"><span id="submitCount">0</span>/<span id="totalCount">0</span></span>
+						</div>
+					</div>
+					
+				</div>
+				<div class="task-box">
+					<div class="task-title layui-form">
+						<span class="task-title-left"><img src="img/gou.png"/> 作业批改</span>
+						<div class="task-title-right">
+<!-- 							<input type="checkbox"  name="isSubmit" lay-skin="switch" value="1"> -->
+							 已交作业学生
+						</div>
+					</div>
+					<ul class="person-ul">
+<!-- 						<li> -->
+<!-- 							<img class="person-icon" src="img/person.png"/> -->
+<!-- 							<div class="person-li-info"> -->
+<!-- 								<p class="person-name">学生1 ></p> -->
+<!-- 								<p class="person-time">2018-10-10 23:23:23</p> -->
+<!-- 							</div> -->
+<!-- 						</li> -->
+					</ul>
+				</div>
+			</div>
+		</div>
+		<script src="js/jquery.min.js"></script>
+		<script src="layui/layui.all.js"></script>
+		<script type="text/javascript">
+			initClasses();
+			var time = "";
+			$(document).ready(function() {
+				var homeworkId = getUrlParam("homeworkId");
+				initHomeworkInfo(homeworkId);
+				students(homeworkId,$("#classes").val(),1);
+				
+				$(document).delegate(".condition_li","click",function(){
+					window.location.href = "questions.html?student="+$(this).attr("studentId")+"&homework="+homeworkId+"&time="+time+"&status="+$(this).attr("status");
+				});
+			});
+			function initClasses(){
+				$.ajax({
+					url: "/education/a/homework/classes?__ajax=true&mobileLogin=true",
+					type: 'get',
+// 					contentType:'application/json',
+					dataType:'json',
+					success:function(data){
+						if(data.success){
+							 var classes = data.body.classes;
+							 $("#classes").empty().append('<option value=""></option>');
+							 for(var cs of classes){
+								 $("#classes").append('<option value="'+cs.id+'">'+cs.name+'</option>');
+							 }
+						 }
+					},
+					error:function(data){
+						console.log(data)
+					}
+				});
+			 }
+			
+			function initHomeworkInfo(id){
+				$.ajax({
+					url: "/education/a/homework/get?__ajax=true&mobileLogin=true",
+					type: 'post',
+// 					contentType:'application/json',
+					dataType:'json',
+					data: {
+						"id":id
+					},
+					success:function(data){
+						var homework = data.body.data;
+						$("#teacherName").text(homework.createBy.name);
+						$("#arrangeTime").text(homework.arrangeTime);
+						time = homework.arrangeTime;
+						$("#subjectIcon").attr("src",homework.iconLink);
+						var statusStr = "未布置";
+						if(homework.status == '1'){
+							statusStr = "未收";
+						}else if(homework.status == '2'){
+							statusStr = "未批改";
+						}else if(homework.status == '3'){
+							statusStr = "已批改";
+						}else if(homework.status == '4'){
+							statusStr = "已作废";
+						}
+						$("#status").text(statusStr);
+						$("#requirement").text(homework.requirement);
+						$("#requirement").text(homework.requirement);
+						if(homework.questionsCount != undefined && homework.questionsCount.length > 0){
+							for(var i = 0;i < homework.questionsCount.length ;i++){
+								$("#questiontype"+homework.questionsCount[i].questiontype).text(homework.questionsCount[i].count);
+							}
+						}
+						if(homework.studentsCount != undefined && homework.studentsCount.length > 0){
+							$("#submitCount").text(homework.studentsCount[0].submitCount);
+							$("#totalCount").text(homework.studentsCount[0].totalCount);
+							if(homework.studentsCount[0].totalCount > 0){
+								$(".layui-progress-bar").css("width",parseInt((homework.studentsCount[0].submitCount*100)/homework.studentsCount[0].totalCount));
+							}
+						}
+					},
+					error:function(data){
+						console.log(data)
+					}
+				});
+			}
+			
+			function students(homework,classes,status){
+				$.ajax({
+					url: "/education/a/homework/students?__ajax=true&mobileLogin=true",
+					type: 'post',
+// 					contentType:'application/json',
+					dataType:'json',
+					data: {
+						"homework":homework,
+						"classes":classes,
+						"status":status
+					},
+					success:function(data){
+						var students = data.body.rows;
+						$(".person-ul").empty();
+						for(var student of students){
+							$(".person-ul").append(`<li style="cursor:pointer;" class="condition_li" studentId="`+student.id+`" status="`+student.status+`">
+														<img class="person-icon" src="`+checkStr(student.headImg)+`"/>
+														<div class="person-li-info">
+															<p class="person-name">`+checkStr(student.studentName)+` ></p>
+															<p class="person-time">`+student.time+`</p>
+														</div>
+													</li>`);
+						}
+					},
+					error:function(data){
+						console.log(data)
+					}
+				});
+			}
+			
+			//获取url中的参数
+	        function getUrlParam(name) {
+	            var reg = new RegExp("(^|&)" + name + "=([^&]*)(&|$)"); //构造一个含有目标参数的正则表达式对象
+	            var r = window.location.search.substr(1).match(reg);  //匹配目标参数
+	            if (r != null) return unescape(r[2]); return null; //返回参数值
+	        }
+			
+			function checkStr(str){
+				if(str == undefined){
+					return "";
+				}
+				return str;
+			}
+			
+		</script>
+		
+	</body>
+</html>

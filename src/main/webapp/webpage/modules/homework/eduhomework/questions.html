@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="UTF-8">
+		<title></title>
+		<link rel="stylesheet" type="text/css" href="layui/css/layui.css"/>
+		<link rel="stylesheet" type="text/css" href="css/style.css"/>
+	</head>
+	<body class="overhidden">
+		<!--理想尺寸1180，要适配更大的屏幕-->
+		<div class="header">
+			<span class="back" style="cursor:pointer;"><&nbsp;返回</span>
+			<span class="time"></span>
+		</div>
+		<div class="content-parent">
+			<ul class="content-box" id="questions">
+<!-- 				<li> -->
+<!-- 					<p class="question-title color-black">根据课文回答问题，学盖子怎么不见了？</p> -->
+<!-- 					<p class="question-tips color-black">涉及知识点：<span>词</span><span>时间</span></p> -->
+<!-- 					<p class="question-model"> <span><img class="file-icon" src="img/word.png"/>题库模板.docx</span><span><img class="file-icon" src="img/word.png"/>题库模板.docx</span> </p> -->
+<!-- 					<p class="question-select">选择答案 <span class="answer color-black">A.正确</span> <span class="answer color-black">B.错误</span>  </p> -->
+<!-- 					<div class="answer-box">输入答案：<input type="text" /> -->
+<!-- 						<span class="submit-span">提交</span> -->
+<!-- 					</div> -->
+<!-- 				</li> -->
+			</ul>
+			<div class="submit-button" style="display:none;">批改完成</div>
+		</div>
+		<script src="js/jquery.min.js"></script>
+		<script src="layui/layui.all.js"></script>
+		<script type="text/javascript">
+			$(document).ready(function() {
+				var homework = getUrlParam("homework");
+				var student = getUrlParam("student");
+				var time = getUrlParam("time");
+				var status = getUrlParam("status");
+				$(".time").text("布置时间:"+time);
+				//返回上一页
+				$(".back").click(function(){
+					history.back(-1);
+				});
+				//获取题目列表
+				getQuestions(homework,student,status);
+				//主观题单题批改
+				$(document).delegate(".submit-span","click",function(){
+					var question = $(this).attr("questionId");
+					var isCorrect = $(this).prev().val();
+					$(this).prev().prop("disabled",true);
+					$(this).remove();
+					subjectCorrect(homework,student,question,isCorrect);
+				})
+				//完成批改
+				$(".submit-button").click(function(){
+					completeCorrects(homework,student);
+				});
+				
+			});
+		
+			
+			function getQuestions(homework,student,status){
+				$.ajax({
+					url: "/education/a/homework/question?__ajax=true&mobileLogin=true",
+					type: 'post',
+// 					contentType:'application/json',
+					dataType:'json',
+					data: {
+						"id":homework,					
+						"student":student
+					},
+					success:function(data){
+						var arr = data.body.data;
+						$("#questions").empty();
+						for(var item of arr){
+							var files = "";
+							if(item.filesList != undefined && item.filesList.length > 0){
+								var count = item.filesList.length;
+								if(count > 3){
+									count = 3;
+								}
+								for(var i = 0;i < count;i++){
+									files += ('<span><img class="file-icon" src="'+item.filesList[i].iconUrl+'"/>'+item.filesList[i].name+'</span>');
+								}
+							}
+							var optionArr = item.options.split("；");
+							var optionStr = "";
+							for(var option of optionArr){
+								optionStr += '<span class="answer color-black">'+option+'</span>'
+							}
+							if(item.questionType <= 4){
+								var resultStr = '<span style="color:red;">回答错误&nbsp;&nbsp;&nbsp;×</span>';
+								if(item.isCorrect == '1'){
+									resultStr = '<span style="color:green;">回答正确&nbsp;&nbsp;&nbsp;√</span>';
+								}
+								$("#questions").append(`<li>
+															<p class="question-title color-black">`+item.questionText+`</p>
+															<p class="question-tips color-black">涉及知识点：<span>`+checkStr(item.knowledgeNames)+`</span></p>
+															<p class="question-model"> ` + files + `</p>
+															<p class="question-select"> ` + optionStr + ` </p>
+															<div class="answer-box">答：<span class="answer color-black">`+checkStr(item.studentAnswer)+`</span>
+																<div class="answer color-black" style="float:right;">正确答案：<span>`+item.answer+`</span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;`+resultStr+`</div>
+															</div>
+														</li>`);
+							}else{
+								var submit = "";
+								if(status == '1'){
+									submit = '<span class="submit-span" style="cursor:pointer;" questionId="'+item.id+'">批改</span>';
+									$(".submit-button").show();
+								}
+								if((item.isCorrect == undefined || item.isCorrect == "") && item.studentAnswer != undefined){
+									$("#questions").append(`<li>
+																<p class="question-title">`+item.questionText+`</p>
+																<p class="question-tips">涉及知识点：<span>`+checkStr(item.knowledgeNames)+`</span></p>
+																<p class="question-model">` + files + `</p>
+																<div class="answer-box">答：<input type="text" value="`+checkStr(item.studentAnswer)+`" disabled/>
+																	<select class="isCorrect">
+																		<option value="1">1分</option>
+																		<option value="2">2分</option>
+																		<option value="3">3分</option>
+																		<option value="4">4分</option>
+																		<option value="5">5分</option>
+																	</select>`+submit+`
+																</div>
+															</li>`);
+								}else{
+									$("#questions").append(`<li>
+																<p class="question-title">`+item.questionText+`</p>
+																<p class="question-tips">涉及知识点：<span>`+checkStr(item.knowledgeNames)+`</span></p>
+																<p class="question-model">` + files + `</p>
+																<div class="answer-box">答：<input type="text" value="`+checkStr(item.studentAnswer)+`" disabled/>
+																	<select class="isCorrect" disabled>
+																		<option>`+checkStr(item.isCorrect)+`分</option>
+																	</select>
+																</div>
+															</li>`);
+								}
+								
+							}
+						}
+						console.log(data)
+					},
+					error:function(data){
+						console.log(data)
+					}
+				});
+			}
+			
+			function subjectCorrect(homework,student,question,isCorrect){
+				$.ajax({
+					url: "/education/a/homework/subjectCorrect?__ajax=true&mobileLogin=true",
+					type: 'post',
+// 					contentType:'application/json',
+					dataType:'json',
+					data: {
+						"homework":homework,					
+						"student":student,
+						"question":question,
+						"isCorrect":isCorrect
+					},
+					success:function(data){
+						alert(data.msg);
+					},
+					error:function(data){
+						console.log(data)
+					}
+				});
+			}
+			
+			function completeCorrects(homework,student){
+				$.ajax({
+					url: "/education/a/homework/completeCorrect?__ajax=true&mobileLogin=true",
+					type: 'post',
+// 					contentType:'application/json',
+					dataType:'json',
+					data: {
+						"homework":homework,					
+						"student":student,
+						"status":2
+					},
+					success:function(data){
+						alert(data.msg);
+						history.back(-1);
+					},
+					error:function(data){
+						console.log(data)
+					}
+				});
+			}
+			
+			//获取url中的参数
+	        function getUrlParam(name) {
+	            var reg = new RegExp("(^|&)" + name + "=([^&]*)(&|$)"); //构造一个含有目标参数的正则表达式对象
+	            var r = window.location.search.substr(1).match(reg);  //匹配目标参数
+	            if (r != null) return unescape(r[2]); return null; //返回参数值
+	        }
+			
+			function checkStr(str){
+				if(str == undefined){
+					return "";
+				}
+				return str;
+			}
+		</script>
+	</body>
+</html>
